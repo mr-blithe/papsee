@@ -4,10 +4,6 @@ import type { Locale } from '@/i18n/routing'
 export const VERIFIED_SEARCH_PARAM = 'verified'
 export const VERIFIED_SEARCH_VALUE = '1'
 
-/**
- * Where Better Auth sends the reader once it has checked a confirmation token. A failure comes back
- * to the same path with `error=` appended, which is the channel the sign in page already reads.
- */
 export function verificationCallbackPath(locale: Locale): string {
   return getPathname({
     href: { pathname: '/sign-in', query: { [VERIFIED_SEARCH_PARAM]: VERIFIED_SEARCH_VALUE } },

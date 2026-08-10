@@ -1,12 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { REGEXP_ONLY_DIGITS } from 'input-otp'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
+import { useResendCooldown } from '@/hooks/use-resend-cooldown'
 import { Link, useRouter } from '@/i18n/navigation'
 import type { Locale } from '@/i18n/routing'
 import { trackEvent } from '@/lib/analytics'
@@ -14,10 +15,6 @@ import { twoFactor } from '@/lib/auth-client'
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, authErrorKey, type AuthErrorMessageKey } from '@/lib/auth-errors'
 import { AUTH_LOCALE_HEADER } from '@/lib/auth-locale'
 import { SIGN_IN_CODE_LENGTH } from '@/lib/auth-mail'
-
-// Better Auth rate limits /two-factor/* to three requests per ten seconds, so the button waits out
-// a window rather than letting a second press land on a refusal.
-const RESEND_COOLDOWN_SECONDS = 15
 
 export function VerifyOtpForm() {
   const t = useTranslations('Auth')
@@ -28,14 +25,7 @@ export function VerifyOtpForm() {
   const [pending, setPending] = useState(false)
   const [trustDevice, setTrustDevice] = useState(true)
   const [resent, setResent] = useState(false)
-  const [cooldown, setCooldown] = useState(RESEND_COOLDOWN_SECONDS)
-
-  useEffect(() => {
-    if (cooldown === 0) return
-
-    const timer = setTimeout(() => setCooldown((seconds) => seconds - 1), 1000)
-    return () => clearTimeout(timer)
-  }, [cooldown])
+  const cooldown = useResendCooldown()
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -60,7 +50,7 @@ export function VerifyOtpForm() {
   async function handleResend() {
     setErrorKey(null)
     setResent(false)
-    setCooldown(RESEND_COOLDOWN_SECONDS)
+    cooldown.restart()
 
     const { error } = await twoFactor.sendOtp({ fetchOptions: { headers: { [AUTH_LOCALE_HEADER]: locale } } })
 
@@ -91,8 +81,6 @@ export function VerifyOtpForm() {
                 value={code}
                 autoFocus
                 inputMode="numeric"
-                // Anchored, because input-otp tests the whole value and an unanchored pattern
-                // matches the empty string inside anything, which turns the filter off.
                 pattern={REGEXP_ONLY_DIGITS}
                 autoComplete="one-time-code"
                 aria-invalid={errorKey !== null || undefined}
@@ -141,8 +129,14 @@ export function VerifyOtpForm() {
             >
               {t('verifySubmit')}
             </Button>
-            <Button type="button" variant="outline" className="w-full" disabled={cooldown > 0} onClick={handleResend}>
-              {cooldown > 0 ? t('verifyResendWait', { seconds: cooldown }) : t('verifyResend')}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={cooldown.remaining > 0}
+              onClick={handleResend}
+            >
+              {cooldown.remaining > 0 ? t('verifyResendWait', { seconds: cooldown.remaining }) : t('verifyResend')}
             </Button>
           </FieldGroup>
         </form>

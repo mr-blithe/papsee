@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, Download, Loader2, TriangleAlert, UserPen } from 'lucide-react'
+import { ChevronDown, Download, UserPen } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
+import { AccountConfirmation } from '@/components/panel/account-confirmation'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   DropdownMenu,
@@ -14,9 +15,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Link, useRouter } from '@/i18n/navigation'
+import { CONFIRMATION_HEADER } from '@/lib/account-confirmation'
 import { apiErrorKey, type ApiErrorMessageKey } from '@/lib/api'
 import { authErrorKey, type AuthErrorMessageKey } from '@/lib/auth-errors'
 import { deleteUser } from '@/lib/auth-client'
@@ -56,21 +58,20 @@ export function SettingsScreen({
   const [dataErrorKey, setDataErrorKey] = useState<ApiErrorMessageKey | null>(null)
 
   const [accountConfirmation, setAccountConfirmation] = useState('')
-  const [password, setPassword] = useState('')
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [accountErrorKey, setAccountErrorKey] = useState<AuthErrorMessageKey | null>(null)
 
   const dataWord = t('deleteConfirmWord')
   const accountWord = t('deleteAccountConfirmWord')
   const canDeleteData = matches(dataConfirmation, dataWord)
-  const canDeleteAccount = matches(accountConfirmation, accountWord) && (!hasPassword || password.length > 0)
+  const canDeleteAccount = matches(accountConfirmation, accountWord)
 
-  const removeTherapyData = async () => {
+  const removeTherapyData = async (code: string) => {
     setDeletingData(true)
     setDataErrorKey(null)
 
     try {
-      await deleteAllTherapyData()
+      await deleteAllTherapyData(code)
       setDataConfirmation('')
       router.refresh()
       router.push('/panel/import')
@@ -80,14 +81,17 @@ export function SettingsScreen({
     }
   }
 
-  const removeAccount = async () => {
+  const removeAccount = async (code: string, password: string) => {
     setDeletingAccount(true)
     setAccountErrorKey(null)
 
-    const { error } = await deleteUser({
-      callbackURL: AFTER_DELETE_PATH,
-      ...(hasPassword ? { password } : {}),
-    })
+    const { error } = await deleteUser(
+      {
+        callbackURL: AFTER_DELETE_PATH,
+        ...(hasPassword ? { password } : {}),
+      },
+      { headers: { [CONFIRMATION_HEADER]: code } },
+    )
 
     if (error) {
       setAccountErrorKey(authErrorKey(error.code))
@@ -188,16 +192,17 @@ export function SettingsScreen({
                 />
               </Field>
 
-              {dataErrorKey ? <FieldError>{errors(dataErrorKey)}</FieldError> : null}
-
-              <Button
-                variant="destructive"
-                disabled={!canDeleteData || deletingData}
-                onClick={() => void removeTherapyData()}
-              >
-                {deletingData ? <Loader2 className="animate-spin" aria-hidden /> : <TriangleAlert aria-hidden />}
-                {actions('deleteData')}
-              </Button>
+              {canDeleteData ? (
+                <AccountConfirmation
+                  action="deleteData"
+                  hasPassword={hasPassword}
+                  warning={t('deleteDataPermanent')}
+                  submitLabel={actions('deleteData')}
+                  pending={deletingData}
+                  errorMessage={dataErrorKey ? errors(dataErrorKey) : null}
+                  onConfirm={(code) => void removeTherapyData(code)}
+                />
+              ) : null}
             </section>
 
             <section className="space-y-4 border-t border-border px-5 py-4">
@@ -206,21 +211,6 @@ export function SettingsScreen({
                 <p className="mt-0.5 text-xs text-muted-foreground">{t('deleteAccountDescription')}</p>
               </div>
               <p className="text-xs text-muted-foreground">{t('deleteAccountWarning')}</p>
-
-              {hasPassword ? (
-                <Field className="sm:max-w-xs">
-                  <FieldLabel htmlFor="deleteAccountPassword">{t('deleteAccountPasswordLabel')}</FieldLabel>
-                  <Input
-                    id="deleteAccountPassword"
-                    type="password"
-                    value={password}
-                    autoComplete="current-password"
-                    onChange={(event) => setPassword(event.target.value)}
-                  />
-                </Field>
-              ) : (
-                <p className="text-xs text-muted-foreground">{t('deleteAccountFreshHint')}</p>
-              )}
 
               <Field className="sm:max-w-xs">
                 <FieldLabel htmlFor="deleteAccountConfirm">{t('deleteConfirmLabel', { word: accountWord })}</FieldLabel>
@@ -232,16 +222,17 @@ export function SettingsScreen({
                 />
               </Field>
 
-              {accountErrorKey ? <FieldError>{authErrors(accountErrorKey)}</FieldError> : null}
-
-              <Button
-                variant="destructive"
-                disabled={!canDeleteAccount || deletingAccount}
-                onClick={() => void removeAccount()}
-              >
-                {deletingAccount ? <Loader2 className="animate-spin" aria-hidden /> : <TriangleAlert aria-hidden />}
-                {actions('deleteAccount')}
-              </Button>
+              {canDeleteAccount ? (
+                <AccountConfirmation
+                  action="deleteAccount"
+                  hasPassword={hasPassword}
+                  warning={t('deleteAccountPermanent')}
+                  submitLabel={actions('deleteAccount')}
+                  pending={deletingAccount}
+                  errorMessage={accountErrorKey ? authErrors(accountErrorKey) : null}
+                  onConfirm={(code, password) => void removeAccount(code, password)}
+                />
+              ) : null}
             </section>
           </CollapsibleContent>
         </PanelCard>

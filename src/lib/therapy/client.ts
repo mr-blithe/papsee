@@ -1,3 +1,4 @@
+import { CONFIRMATION_HEADER } from '@/lib/account-confirmation'
 import { MAX_REQUEST_BODY_BYTES } from '@/lib/api'
 import type { PapFile, PapImport } from '@/lib/pap'
 import { encodePapBundle } from '@/lib/pap/bundle'
@@ -57,8 +58,10 @@ export async function saveProfile(profile: PatientProfile): Promise<void> {
   })
 }
 
-export async function deleteAllTherapyData(): Promise<number> {
-  const { removed } = (await (await request('/api/imports', { method: 'DELETE' })).json()) as { removed: number }
+export async function deleteAllTherapyData(confirmationCode: string): Promise<number> {
+  const { removed } = (await (
+    await request('/api/imports', { method: 'DELETE', headers: { [CONFIRMATION_HEADER]: confirmationCode } })
+  ).json()) as { removed: number }
 
   return removed
 }

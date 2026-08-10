@@ -30,7 +30,7 @@
     "cardFreeTitle": "SD kartı yanınızda taşımayın",
     "cardFreeBody": "Veriyi içe aktardıktan sonra hesabınızda kalır. İncelemek için bilgisayarınızın, SD kartın veya PAP cihazının yanınızda olması gerekmez.",
     "sharingTitle": "Gerektiğinde doktorunuzla paylaşın",
-    "sharingBody": "Geçmişinizden seçtiğiniz verileri SD kart taşımadan doktorunuzla paylaşın.",
+    "sharingBody": "Doktorların kendi hesaplarına ihtiyaç duymadan verilerinizi inceleyebileceği bir bağlantı oluşturun veya SD kart taşımanıza gerek kalmadan verilerinizi anında dışa aktarın.",
     "securityTitle": "Verileriniz bizimle güvende",
     "securityBody": "Sağlık verileriniz hesabınıza bağlı olarak güvenle saklanır.",
     "signalEyebrow": "Eksiksiz bir gece",
@@ -123,7 +123,10 @@
     "errorSessionNotFresh": "Güvenliğiniz için bu işlem yakın zamanda yapılmış bir giriş istiyor. Çıkış yapıp yeniden giriş yaptıktan sonra tekrar deneyin.",
     "verificationSentTitle": "E-posta adresinizi doğrulayın",
     "verificationSentBody": "{email} adresine bir doğrulama bağlantısı gönderdik. Hesabınızı oluşturmayı tamamlamak için bağlantıyı açın.",
-    "verificationSentHint": "Gelen kutunuzda görünmüyorsa spam klasörünü kontrol edin, ardından hesap oluşturmayı yeniden deneyin.",
+    "verificationSentHint": "Gelen kutunuzda görünmüyorsa spam klasörünü kontrol edin, ardından bağlantıyı yeniden isteyin.",
+    "verificationResend": "Bağlantıyı yeniden gönder",
+    "verificationResendWait": "{seconds} saniye sonra yeni bir bağlantı isteyebilirsiniz.",
+    "verificationResent": "Yeni bağlantı yolda.",
     "verifiedNotice": "E-posta adresiniz doğrulandı. Devam etmek için giriş yapın.",
     "verifyTitle": "Giriş kodunuzu girin",
     "verifyDescription": "Bu tarayıcıdan daha önce giriş yapılmadığı için size e-postayla bir kod gönderdik.",
@@ -143,7 +146,8 @@
     "errorCodeExpired": "Bu kodun süresi doldu. Yeni bir kod isteyin.",
     "errorCodeAttempts": "Bu kod için çok fazla deneme yapıldı. Yeni bir kod isteyin.",
     "errorAccountLocked": "Çok sayıda hatalı kod girildiği için hesap kısa süreliğine kilitlendi. Daha sonra yeniden deneyin.",
-    "errorChallengeExpired": "Bu giriş çok uzun sürdü. Baştan başlayın."
+    "errorChallengeExpired": "Bu giriş çok uzun sürdü. Baştan başlayın.",
+    "errorConfirmationFailed": "Onay kodu doğru değil veya süresi dolmuş. Yeni bir kod isteyin."
   },
   "Actions": {
     "chooseFolder": "Kart klasörünü seç",
@@ -313,7 +317,17 @@
     "deleteAccountWarning": "Bu işlem hesabınızı, profilinizi ve altında kayıtlı her geceyi kaldırır. Oturumunuz kapanır ve işlem geri alınamaz. Saklamak istiyorsanız önce verilerinizi indirin.",
     "deleteAccountConfirmWord": "HESABIMI SİL",
     "deleteAccountPasswordLabel": "Parolanız",
-    "deleteAccountFreshHint": "Google ile giriş yaptığınız için bu işlem parola yerine yakın zamanda yapılmış bir giriş istiyor."
+    "deleteAccountFreshHint": "Google ile giriş yaptığınız için bu işlem parola yerine yakın zamanda yapılmış bir giriş istiyor.",
+    "confirmPassword": "Parolanız",
+    "confirmPasswordHint": "E-posta adresinize kod göndermeden önce parolanızı istiyoruz.",
+    "confirmNoPasswordHint": "Hesabınızda parola tanımlı değil, bu yüzden e-posta adresinize bir kod göndereceğiz.",
+    "confirmSendCode": "Bana kod gönder",
+    "confirmCode": "Onay kodu",
+    "confirmCodeHint": "Az önce e-postayla gönderdiğimiz kodu girin.",
+    "confirmResend": "Yeni kod gönder",
+    "confirmResendWait": "{seconds} saniye sonra yeni bir kod isteyebilirsiniz.",
+    "deleteDataPermanent": "Bu işlem kalıcıdır. Hesabınızdaki tüm geceler silinir ve geri getirilemez. Bir kopya saklamak istiyorsanız önce dışa aktarın.",
+    "deleteAccountPermanent": "Bu işlem kalıcıdır. Hesabınız ve içindeki tüm geceler silinir ve geri getirilemez. Bir kopya saklamak istiyorsanız önce dışa aktarın."
   },
   "Export": {
     "chooseFormat": "Bir biçim seçin",
@@ -450,7 +464,9 @@
     "payloadTooLarge": "Karttaki bir dosya tek parçada gönderilemeyecek kadar büyük.",
     "unsupportedCard": "Kartta okunabilir tedavi verisi bulunamadı.",
     "emptyCard": "Kart okundu, ancak henüz tedavi görülen bir gece içermiyor.",
-    "unknown": "Bir sorun oluştu. Yeniden deneyin."
+    "unknown": "Bir sorun oluştu. Yeniden deneyin.",
+    "invalidPassword": "Parola doğru değil.",
+    "confirmationFailed": "Onay kodu doğru değil veya süresi dolmuş. Yeni bir kod isteyin."
   },
   "Demo": {
     "banner": "Örnek bir hastanın yapay olarak üretilmiş verilerini görmektesiniz.",
@@ -679,7 +695,14 @@
     "codeIntro": "Bu tarayıcıdan daha önce giriş yapılmadığı için PapSee bir kod istedi.",
     "codeValue": "Kod: {code}",
     "codeExpiry": "Kod {minutes} dakika boyunca geçerlidir.",
-    "codeIgnore": "Şu anda giriş yapan siz değilseniz parolanızı başkası biliyor demektir. Parolanızı değiştirin."
+    "codeIgnore": "Şu anda giriş yapan siz değilseniz parolanızı başkası biliyor demektir. Parolanızı değiştirin.",
+    "confirmDataSubject": "PapSee tedavi verilerinizin silinmesini onaylayın",
+    "confirmDataIntro": "PapSee hesabınızda saklanan tüm gecelerin silinmesini istediniz. Onaylamak için bu kodu girin.",
+    "confirmAccountSubject": "PapSee hesabınızın silinmesini onaylayın",
+    "confirmAccountIntro": "PapSee hesabınızın ve içindeki her şeyin silinmesini istediniz. Onaylamak için bu kodu girin.",
+    "confirmValue": "Kod: {code}",
+    "confirmExpiry": "Kod {minutes} dakika boyunca geçerlidir.",
+    "confirmIgnore": "Bu işlemi siz yapmadıysanız bu e-postayı yok sayın ve parolanızı değiştirin. Hiçbir şey silinmedi."
   },
   "Legal": {
     "privacyTitle": "Gizlilik politikası",

@@ -15,9 +15,6 @@ export async function generateMetadata(props: PageProps<'/[locale]/sign-in/verif
 export default async function VerifySignInPage({ params }: PageProps<'/[locale]/sign-in/verify'>) {
   const { locale } = await params
   setRequestLocale(locale as Locale)
-  // A reader part way through a challenge holds no session, so this only bounces someone who is
-  // already signed in. Arriving without a challenge is left to the form, which reports it as an
-  // expired sign in rather than a missing page.
   await requireSignedOut(locale as Locale)
 
   return (

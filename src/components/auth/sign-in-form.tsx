@@ -40,7 +40,6 @@ export function SignInForm({
       {
         email: String(form.get('email')),
         password: String(form.get('password')),
-        // A blocked sign-in re-sends the confirmation link, and this is where that link points.
         callbackURL: verificationCallbackPath(locale),
       },
       { headers: { [AUTH_LOCALE_HEADER]: locale } },
@@ -52,9 +51,6 @@ export function SignInForm({
       return
     }
 
-    // The password was right but the browser is new, so there is no session yet. Sending the code
-    // from here rather than from the next screen keeps it one deliberate call and starts the mail
-    // while that page is still loading.
     if (data && 'twoFactorRedirect' in data) {
       await twoFactor.sendOtp({ fetchOptions: { headers: { [AUTH_LOCALE_HEADER]: locale } } })
       router.push('/sign-in/verify')

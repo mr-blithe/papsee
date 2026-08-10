@@ -30,7 +30,7 @@
     "cardFreeTitle": "Leave the SD card at home",
     "cardFreeBody": "After an import, your nights stay with your account. You do not need the card or your PAP device beside you to review them.",
     "sharingTitle": "Share with your doctor",
-    "sharingBody": "You can send selected data from your history to your doctor without carrying an SD card.",
+    "sharingBody": "Create a link that lets doctors review your nights without needing an account, or export your data on the fly without carrying an SD card.",
     "securityTitle": "Your data is protected",
     "securityBody": "Your health data is stored securely.",
     "signalEyebrow": "One night, without the blind spots",
@@ -123,7 +123,10 @@
     "errorSessionNotFresh": "For your security this needs a recent sign in. Sign out, sign in again, then try once more.",
     "verificationSentTitle": "Confirm your email address",
     "verificationSentBody": "We sent a confirmation link to {email}. Open it to finish creating your account.",
-    "verificationSentHint": "Nothing in your inbox? Check the spam folder, then try creating the account again.",
+    "verificationSentHint": "Nothing in your inbox? Check the spam folder, then ask for the link again.",
+    "verificationResend": "Send the link again",
+    "verificationResendWait": "You can ask for a new link in {seconds} seconds.",
+    "verificationResent": "A new link is on its way.",
     "verifiedNotice": "Your email address is confirmed. Sign in to carry on.",
     "verifyTitle": "Enter your sign-in code",
     "verifyDescription": "We emailed a code to you because this browser has not signed in before.",
@@ -143,7 +146,8 @@
     "errorCodeExpired": "That code has expired. Ask for a new one.",
     "errorCodeAttempts": "Too many attempts on that code. Ask for a new one.",
     "errorAccountLocked": "Too many wrong codes, so the account is locked for a short while. Try again later.",
-    "errorChallengeExpired": "This sign in took too long. Start again."
+    "errorChallengeExpired": "This sign in took too long. Start again.",
+    "errorConfirmationFailed": "That confirmation code is not right, or it has expired. Ask for a new one."
   },
   "Actions": {
     "chooseFolder": "Choose card folder",
@@ -313,7 +317,17 @@
     "deleteAccountWarning": "This removes your account, your profile and every night stored under it. You will be signed out and it cannot be undone. Download your data first if you want to keep it.",
     "deleteAccountConfirmWord": "DELETE MY ACCOUNT",
     "deleteAccountPasswordLabel": "Your password",
-    "deleteAccountFreshHint": "You signed in with Google, so this needs a recent sign in rather than a password."
+    "deleteAccountFreshHint": "You signed in with Google, so this needs a recent sign in rather than a password.",
+    "confirmPassword": "Your password",
+    "confirmPasswordHint": "We ask for it before sending a code to your email address.",
+    "confirmNoPasswordHint": "Your account has no password, so we will send a code to your email address instead.",
+    "confirmSendCode": "Email me a code",
+    "confirmCode": "Confirmation code",
+    "confirmCodeHint": "Enter the code we just emailed you.",
+    "confirmResend": "Send a new code",
+    "confirmResendWait": "You can ask for a new code in {seconds} seconds.",
+    "deleteDataPermanent": "This is permanent. Every night stored in your account is deleted and cannot be brought back. Export first if you want to keep a copy.",
+    "deleteAccountPermanent": "This is permanent. Your account and every night in it are deleted and cannot be brought back. Export first if you want to keep a copy."
   },
   "Export": {
     "chooseFormat": "Choose a format",
@@ -450,7 +464,9 @@
     "payloadTooLarge": "One file on the card is too large to send in one piece.",
     "unsupportedCard": "No readable therapy data was found on that card.",
     "emptyCard": "That card was read, but it holds no nights of therapy yet.",
-    "unknown": "Something went wrong. Try again."
+    "unknown": "Something went wrong. Try again.",
+    "invalidPassword": "That password is not correct.",
+    "confirmationFailed": "That confirmation code is not right, or it has expired. Ask for a new one."
   },
   "Demo": {
     "banner": "This is an example patient. The nights are made up and nothing here is yours.",
@@ -679,7 +695,14 @@
     "codeIntro": "PapSee asked for a code because this browser has not signed in before.",
     "codeValue": "Code: {code}",
     "codeExpiry": "It works for {minutes} minutes.",
-    "codeIgnore": "If you are not signing in right now, someone else knows your password. Change it."
+    "codeIgnore": "If you are not signing in right now, someone else knows your password. Change it.",
+    "confirmDataSubject": "Confirm deleting your PapSee therapy data",
+    "confirmDataIntro": "You asked to delete every night stored in your PapSee account. Enter this code to confirm.",
+    "confirmAccountSubject": "Confirm deleting your PapSee account",
+    "confirmAccountIntro": "You asked to delete your PapSee account and everything in it. Enter this code to confirm.",
+    "confirmValue": "Code: {code}",
+    "confirmExpiry": "The code works for {minutes} minutes.",
+    "confirmIgnore": "If this was not you, ignore this email and change your password. Nothing has been deleted."
   },
   "Legal": {
     "privacyTitle": "Privacy policy",

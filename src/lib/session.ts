@@ -11,18 +11,18 @@ const CREDENTIAL_PROVIDER = 'credential'
 
 export const getSession = cache(async () => auth.api.getSession({ headers: await headers() }))
 
-/**
- * Whether the account can confirm a destructive change with a password. A Google only reader has
- * none, so Better Auth falls back to requiring a session younger than freshAge instead.
- */
-export async function hasPasswordAccount(userId: string): Promise<boolean> {
+export async function credentialPasswordHash(userId: string): Promise<string | null> {
   const [row] = await db
-    .select({ id: account.id })
+    .select({ password: account.password })
     .from(account)
     .where(and(eq(account.userId, userId), eq(account.providerId, CREDENTIAL_PROVIDER)))
     .limit(1)
 
-  return row !== undefined
+  return row?.password ?? null
+}
+
+export async function hasPasswordAccount(userId: string): Promise<boolean> {
+  return (await credentialPasswordHash(userId)) !== null
 }
 
 export async function requireSignedOut(locale: Locale): Promise<void> {

@@ -4,6 +4,8 @@ const STATUS_BY_CODE = {
   readOnlyDemo: 403,
   readOnlyShare: 403,
   notInSharedView: 403,
+  invalidPassword: 403,
+  confirmationFailed: 403,
   notFound: 404,
   tooManyShares: 409,
   payloadTooLarge: 413,

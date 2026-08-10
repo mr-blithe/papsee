@@ -20,8 +20,6 @@ export class MailDeliveryError extends Error {
 }
 
 export async function sendMail(mail: Mail): Promise<void> {
-  // The suite is normally starved of credentials rather than blocked, so a test that supplies its
-  // own would open a real SMTP connection and deliver to a real inbox.
   if (process.env.NODE_ENV === 'test') throw new MailConfigurationError()
 
   const environment = parseSmtpEnvironment(process.env)
