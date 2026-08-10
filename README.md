@@ -1,6 +1,9 @@
 # PapSee
 
-Your PAP therapy data, in the browser.
+[![CI](https://github.com/mr-blithe/papsee/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mr-blithe/papsee/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/github/mr-blithe/papsee/graph/badge.svg?token=OUV7INYX7X)](https://codecov.io/github/mr-blithe/papsee)
+
+Online PAP therapy tracking suite.
 
 PapSee reads what your PAP device wrote to its SD card and gives the night back to you: the flow waveform, every
 scored event, AHI, leak, pressure, usage, and the history and trends across nights. On a phone, on a laptop, on
@@ -37,21 +40,13 @@ You upload what your machine wrote to the card. PapSee parses it and gives the n
   something you stare at alone.
 - **Export.** JSON and CSV, so there is something to actually send your doctor.
 - **An example patient.** Click through every screen with generated data, without signing up or uploading anything.
-- **English and Turkish**, throughout.
 
-## Where it honestly stands
+## Roadmap
 
-PapSee is in beta and the device coverage is narrower than the ambition:
-
-- **ResMed only.** AirSense 11 AutoSet is the one family verified against a real card, because it is the one I own.
-- **S9, AirSense 10 and AirCurve** are implemented from the format, OSCAR's source and synthetic fixtures, but no
-  real card from those families has been through them. Bilevel, ASV and iVAPS import, but not every setting is
-  represented yet, and the app says so rather than quietly showing you a number.
-- **Philips, Fisher & Paykel, Löwenstein, DeVilbiss, Resvent and BMC** cards are recognised and refused with a clear
-  "not supported yet". An unreadable card must never look like a night you slept badly.
-
-This is exactly where help is worth the most. If you have a card from anything other than an AirSense 11, importing
-it and telling me what broke is the single most useful thing you can do.
+- More PAP device support.
+- Mobile app
+- Syncing health data from Apple Health, Samsung Health
+- AI integration with MCP servers
 
 ## Self hosting
 
@@ -73,7 +68,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-That brings up Postgres 18, applies the migrations, seeds the privacy policy and terms, and serves the app on
+That brings up Postgres 17, applies the migrations, seeds the privacy policy and terms, and serves the app on
 <http://localhost:3000>. Create an account and import a card.
 
 Things worth knowing:
@@ -85,11 +80,11 @@ Things worth knowing:
   regardless. A self hosted instance reports nothing to anyone by default.
 - Google sign-in, the Turnstile challenge on sign-up, and the contact form are each optional. Leave their variables
   empty and the features are simply not there. Everything else works.
-- Your therapy data lives in the `papsee-db` Docker volume. Back it up like anything else you care about.
+- Your therapy data lives in the `papsee_postgres-data` Docker volume. Back it up like anything else you care about.
 
 ### Without Docker
 
-You need Node 24, pnpm 11 and a Postgres 18 of your own.
+You need Node 24, pnpm 11 and a Postgres 17 of your own.
 
 ```bash
 pnpm install
@@ -102,28 +97,15 @@ pnpm start                          # localhost:3000
 
 Use `pnpm dev` instead of `build` and `start` while you are working on the code.
 
+If your `DATABASE_URL` goes through a connection pooler, on a provider like Neon or on a PgBouncer of your own, also
+set `DATABASE_URL_UNPOOLED` to the same database's direct endpoint. `pnpm db:migrate` reads that one, because schema
+migrations need session state transaction pooling does not keep. A Postgres you connect to directly needs only
+`DATABASE_URL`, so leave the second one empty.
+
 ## Contributing
 
 Contributions are welcome, and a bug report from a device I cannot test is worth as much as a patch.
-[`CONTRIBUTING.md`](CONTRIBUTING.md) has the detail. The short version:
-
-1. Read [`AGENTS.md`](AGENTS.md). It is written for AI assistants but it is the real engineering brief for this
-   repository: the rules the parsing layer obeys, why device timestamps never touch local time, and what the panel
-   is allowed to assume.
-2. Set up as in **Without Docker** above and get the tests green before you change anything.
-3. Work test first. A parser bug starts with the test that reproduces it, using the bytes that triggered it.
-4. Before you open a pull request, run all five, in this order:
-
-   ```bash
-   pnpm format
-   pnpm lint
-   pnpm knip
-   pnpm test
-   pnpm build
-   ```
-
-Do not send therapy data. Not in an issue, not in a test fixture, not in a pull request. A card identifies a person.
-If a bug needs real bytes, say so in the issue and we will work out how to reproduce it without publishing yours.
+[`CONTRIBUTING.md`](CONTRIBUTING.md) has the detail.
 
 ## Translations
 
@@ -142,10 +124,6 @@ To add a third:
    `pnpm db:seed-contracts`. Without them, `/<locale>/privacy` and `/<locale>/terms` return 404.
 6. Run `pnpm test`, which will tell you exactly which keys you are still missing.
 
-Two things the catalogs care about. Write the language in its own alphabet, in full, accents and all: `Sızıntı`,
-never `Sizinti`. And translate the interface, not the device: therapy mode names, `On`/`Off`/`Auto` and clinical
-abbreviations such as AHI, EPR and CPAP stay as the machine reports them, in every language.
-
 ## Stack
 
 Next.js App Router, React, TypeScript in strict mode, Tailwind, shadcn/ui on Base UI primitives, uPlot for the
@@ -162,7 +140,6 @@ the part worth stealing.
 - [OSCAR](https://gitlab.com/CrimsonNape/OSCAR-code), GPL v3, itself derived from Mark Watkins' SleepyHead. The
   reference for what a device records and which numbers matter, and still the better tool if you have a desktop in
   front of you.
-- [oscar-sql](https://gitlab.com/CrimsonNape/oscar-sql), the OSCAR line that moved its storage to a database.
 
 PapSee reads OSCAR to understand the devices and implements from the data itself. No OSCAR source is copied into
 this repository and none should be: it is GPL v3, and its authors ask derivatives to credit SleepyHead by name.

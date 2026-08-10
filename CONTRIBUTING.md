@@ -32,7 +32,7 @@ Other things worth doing:
 
 ## Getting set up
 
-Node 24, pnpm 11, and a Postgres 18. Docker Compose gets you the database in one command.
+Node 24, pnpm 11, and a Postgres 17. Docker Compose gets you the database in one command.
 
 ```bash
 git clone https://github.com/mr-blithe/papsee.git

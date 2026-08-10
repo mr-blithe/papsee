@@ -4,7 +4,7 @@ Guidance for AI coding assistants working in this repository.
 
 ## What PapSee Is
 
-PapSee is a web platform for people with sleep apnea to read their own PAP therapy data. A user imports what their
+PapSee is a web platform for people with sleep apnea to read analyze their own PAP therapy data. A user imports what their
 device wrote to its SD card and gets the night back as charts, event indices and statistics, night after night, with
 history and export on top.
 
@@ -31,7 +31,7 @@ consequences of that direction are already binding:
 ```bash
 pnpm install
 cp .env.example .env.local   # then fill BETTER_AUTH_SECRET
-docker compose up -d postgres  # Postgres 18 on 5432, or point DATABASE_URL at one of your own
+docker compose up -d postgres  # Postgres 17 on 5432, or point DATABASE_URL at one of your own
 pnpm db:migrate              # apply drizzle/ to it
 pnpm db:seed-contracts       # privacy and terms rows, without which those pages notFound()
 pnpm dev                     # localhost:3000
@@ -382,7 +382,7 @@ time fails the suite instead of passing on a machine that sits close enough to U
 
 ## Auth and database
 
-Better Auth over Drizzle over Postgres, email and password plus Google. Local development runs against a Postgres 18
+Better Auth over Drizzle over Postgres, email and password plus Google. Local development runs against a Postgres 17
 of your own on 5432, named by `DATABASE_URL`.
 
 - **Two schema files, one client.** `src/lib/db/schema.ts` belongs to the Better Auth CLI. Everything PapSee owns lives
@@ -412,8 +412,6 @@ of your own on 5432, named by `DATABASE_URL`.
   their siteverify response carries no `action` at all.
 - Deleting a user cascades to `session` and `account`, and now to `patient_profile`, `pap_import`, `pap_day`,
   `pap_event` and `pap_file` as well, which is what the GDPR and KVKK delete path will need.
-- **Postgres 18 moved the docker volume path** to `/var/lib/postgresql`, not `/var/lib/postgresql/data` as in 17 and
-  earlier. Mounting the old path on 18 silently loses the data on every container recreate.
 
 ## Deployment
 
@@ -424,15 +422,17 @@ changes that.
   `vercel.json` pins functions to `fra1`, the Vercel region in the same city. This is a requirement, not a
   performance tuning choice: an import is special category personal data under GDPR and KVKK. Neon's London region
   `aws-eu-west-2` is **not** an EU region and must not be used for this.
-- **One connection string, and in production it is the pooled endpoint**, the hostname with `-pooler` in it.
-  `src/lib/db/index.ts`, `drizzle.config.ts` and `scripts/seed-contracts.ts` all read `DATABASE_URL` and nothing
-  else. The application is what forces the choice: a Vercel function opens a connection per invocation, which
+- **`DATABASE_URL` is what the application runs on, and in production it is the pooled endpoint**, the hostname with
+  `-pooler` in it. `src/lib/db/index.ts` and `scripts/seed-contracts.ts` read it and nothing else. The application is
+  what forces the choice: a Vercel function opens a connection per invocation, which
   [Neon lists](https://neon.com/docs/connect/connection-pooling) as the classic way to exhaust a direct endpoint,
   where a 0.25 CU compute allows 104 connections with seven reserved. The pooled endpoint takes 10,000.
-- **The cost of that choice is that Drizzle Kit runs through PgBouncer**, which the same page advises against for
-  schema migrations, because a tool may need session state transaction pooling does not keep. A migration that fails
-  with something that looks unrelated is the first thing to suspect. The escape hatch needs no code change:
-  `DATABASE_URL=<direct endpoint> pnpm db:migrate` for that one run, because a shell value wins over `.env.local`.
+- **`DATABASE_URL_UNPOOLED` is the direct endpoint, and Drizzle Kit is the only thing that reads it.**
+  `drizzle.config.ts` prefers it and falls back to `DATABASE_URL` when it is empty or unset, because the same Neon page
+  advises against schema migrations over PgBouncer: a tool may need session state transaction pooling does not keep,
+  and a migration that fails with something that looks unrelated is the first thing to suspect. A Postgres reached
+  directly has no pooler to route around, so a local checkout, the docker compose and CI all leave it unset and run on
+  the one variable. Seeding stays on `DATABASE_URL` because it is ordinary inserts, which transaction pooling handles.
 - **No client side pool on top of the pooled endpoint.** Neon runs PgBouncer already, and stacking a second pool on
   it causes connection conflicts.
 - **`pg` is the right driver here and no Neon specific package is needed.** `@neondatabase/serverless` exists for

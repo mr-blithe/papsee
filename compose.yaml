@@ -4,16 +4,14 @@ x-database-url: &database-url postgres://${POSTGRES_USER:-papsee}:${POSTGRES_PAS
 
 services:
   postgres:
-    image: postgres:18-alpine
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-papsee}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-papsee}
       POSTGRES_DB: ${POSTGRES_DB:-papsee}
     volumes:
-      # Postgres 18 moved its data directory. Mounting 17's /var/lib/postgresql/data here looks like
-      # it works and loses every write the next time the container is recreated.
-      - postgres-data:/var/lib/postgresql
+      - postgres-data:/var/lib/postgresql/data
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     healthcheck:

@@ -14,7 +14,7 @@ export async function generateMetadata(props: PageProps<'/[locale]'>): Promise<M
   const metadata = await getTranslations({ locale: activeLocale, namespace: 'Metadata' })
 
   return {
-    title: t('seoTitle'),
+    title: { absolute: t('seoTitle') },
     description: t('seoDescription'),
     alternates: {
       canonical: HOME_PATHS[activeLocale],
