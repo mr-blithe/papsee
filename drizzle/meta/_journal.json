@@ -64,6 +64,27 @@
       "when": 1786344809096,
       "tag": "0008_good_felicia_hardy",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786365026367,
+      "tag": "0009_reflective_shaman",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786365034086,
+      "tag": "0010_enrol_existing_accounts_in_two_factor",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786366265162,
+      "tag": "0011_square_angel",
+      "breakpoints": true
     }
   ]
 }

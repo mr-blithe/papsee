@@ -67,7 +67,17 @@ describe('public search metadata', () => {
       rules: {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/panel', '/tr/panel', '/sign-in', '/tr/sign-in', '/sign-up', '/tr/sign-up'],
+        disallow: [
+          '/api/',
+          '/panel',
+          '/tr/panel',
+          '/share',
+          '/tr/share',
+          '/sign-in',
+          '/tr/sign-in',
+          '/sign-up',
+          '/tr/sign-up',
+        ],
       },
       sitemap: 'https://papsee.example/sitemap.xml',
     })

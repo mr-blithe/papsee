@@ -100,6 +100,8 @@ function resolve(table: ExportTable, t: Translate): ExportSheet {
 export async function GET(request: Request) {
   const context = await getPanelContext()
   if (!context) return apiError('unauthorized')
+  // A link opens the nights on screen. Taking the whole history away as a file is the owner's alone.
+  if (context.view === 'shared') return apiError('notInSharedView')
 
   const { searchParams } = new URL(request.url)
   const download = exportDownload(searchParams.get('format'))
@@ -108,13 +110,14 @@ export async function GET(request: Request) {
   const requestedLocale = searchParams.get('locale')
   const locale = hasLocale(routing.locales, requestedLocale) ? requestedLocale : routing.defaultLocale
 
-  const [profile, days, imports] = context.demo
-    ? [DEMO_PROFILE, demoDaysForExport(Date.now()), []]
-    : await Promise.all([
-        getProfile(context.userId),
-        listDaysForExport(context.userId),
-        listImportsForExport(context.userId),
-      ])
+  const [profile, days, imports] =
+    context.view === 'demo'
+      ? [DEMO_PROFILE, demoDaysForExport(Date.now()), []]
+      : await Promise.all([
+          getProfile(context.userId),
+          listDaysForExport(context.userId),
+          listImportsForExport(context.userId),
+        ])
 
   const data: ExportData = { profile, days, imports }
 

@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server'
-import { ContactMailConfigurationError, ContactMailDeliveryError, sendContactMail } from '@/lib/contact-mail.server'
+import { sendContactMail } from '@/lib/contact-mail.server'
 import { parseContactInput, type ContactMailCopy, type ContactTopic } from '@/lib/contact'
+import { MailConfigurationError, MailDeliveryError } from '@/lib/mail.server'
 import type { Locale } from '@/i18n/routing'
 import { TurnstileUnavailableError, verifyContactChallenge } from '@/lib/turnstile.server'
 
@@ -61,8 +62,8 @@ export async function POST(request: Request) {
   try {
     await sendContactMail(input, await contactMailCopy(input.locale, input.topic))
   } catch (error) {
-    if (error instanceof ContactMailConfigurationError) return errorResponse('notConfigured', 503)
-    if (error instanceof ContactMailDeliveryError) return errorResponse('deliveryFailed', 502)
+    if (error instanceof MailConfigurationError) return errorResponse('notConfigured', 503)
+    if (error instanceof MailDeliveryError) return errorResponse('deliveryFailed', 502)
     throw error
   }
 

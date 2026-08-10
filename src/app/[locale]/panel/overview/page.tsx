@@ -2,9 +2,10 @@ import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { OverviewScreen } from '@/components/panel/overview-screen'
 import type { Locale } from '@/i18n/routing'
+import type { PanelContext } from '@/lib/panel-context'
 import { DEMO_PROFILE } from '@/lib/therapy/demo'
 import { requireStoredDays } from '@/lib/therapy/panel-access'
-import { getProfile } from '@/lib/therapy/repository'
+import { getProfile, type PatientProfile } from '@/lib/therapy/repository'
 
 export async function generateMetadata(props: PageProps<'/[locale]/panel/overview'>): Promise<Metadata> {
   const { locale } = await props.params
@@ -13,12 +14,23 @@ export async function generateMetadata(props: PageProps<'/[locale]/panel/overvie
   return { title: t('title'), description: t('description') }
 }
 
+/**
+ * A share link opens the nights, not who the person is: no date of birth, height, weight or
+ * diagnosis reaches a reader holding one, so the AHI trend simply loses its diagnosis reference line.
+ */
+async function readProfile(context: PanelContext): Promise<PatientProfile | null> {
+  if (context.view === 'demo') return DEMO_PROFILE
+  if (context.view === 'shared') return null
+
+  return getProfile(context.userId)
+}
+
 export default async function OverviewPage({ params }: PageProps<'/[locale]/panel/overview'>) {
   const { locale } = await params
   setRequestLocale(locale as Locale)
 
   const context = await requireStoredDays(locale as Locale)
-  const profile = context.demo ? DEMO_PROFILE : await getProfile(context.userId)
+  const profile = await readProfile(context)
 
   return (
     <div className="flex-1 space-y-3 p-4 md:p-5">

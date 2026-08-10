@@ -1,11 +1,11 @@
 import { apiError } from '@/lib/api'
-import { getPanelContext } from '@/lib/panel-context'
+import { getPanelContext, readOnlyErrorCode } from '@/lib/panel-context'
 import { createImport, deleteAllTherapyData } from '@/lib/therapy/repository'
 
 export async function POST() {
   const context = await getPanelContext()
   if (!context) return apiError('unauthorized')
-  if (context.demo) return apiError('readOnlyDemo')
+  if (context.view !== 'account') return apiError(readOnlyErrorCode(context.view))
 
   const id = await createImport(context.userId)
 
@@ -15,7 +15,7 @@ export async function POST() {
 export async function DELETE() {
   const context = await getPanelContext()
   if (!context) return apiError('unauthorized')
-  if (context.demo) return apiError('readOnlyDemo')
+  if (context.view !== 'account') return apiError(readOnlyErrorCode(context.view))
 
   return Response.json({ removed: await deleteAllTherapyData(context.userId) })
 }

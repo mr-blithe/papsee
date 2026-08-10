@@ -1,17 +1,50 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
+import type { NextResponse } from 'next/server'
 import { DEMO_COOKIE, DEMO_COOKIE_VALUE } from '@/lib/demo-cookie'
+import { SHARE_COOKIE } from '@/lib/share-cookie'
 import { getSession } from '@/lib/session'
+import { findShareByTokenHash } from '@/lib/therapy/repository'
+import { hashShareToken } from '@/lib/therapy/share-token.server'
+import { isShareActive } from '@/lib/therapy/shares'
 
 const DEMO_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24
 
-export type PanelContext = { demo: true; userId: string | null } | { demo: false; userId: string }
+export type PanelContext =
+  | { view: 'account'; userId: string }
+  | { view: 'demo'; userId: string | null }
+  | { view: 'shared'; userId: string; expiresAt: Date }
 
+export type PanelView = PanelContext['view']
+
+/** Which message a mutating route refuses with, so a reader is told why rather than just no. */
+export function readOnlyErrorCode(view: Exclude<PanelView, 'account'>): 'readOnlyDemo' | 'readOnlyShare' {
+  return view === 'demo' ? 'readOnlyDemo' : 'readOnlyShare'
+}
+
+// The layout and the page below it both ask, and a shared view answers from the database, so the
+// lookup is deduplicated per request the way getSession is.
+const readShare = cache(async (token: string) => findShareByTokenHash(hashShareToken(token)))
+
+/**
+ * Whose data the panel is reading, and under what right. A share outranks the reader's own session:
+ * someone with an account of their own who follows a link came to read what was shared with them.
+ * The example patient outranks both, and the link redeem route clears that cookie for the same reason.
+ */
 export async function getPanelContext(): Promise<PanelContext | null> {
   const [session, store] = await Promise.all([getSession(), cookies()])
-  const demo = store.get(DEMO_COOKIE)?.value === DEMO_COOKIE_VALUE
 
-  if (demo) return { demo: true, userId: session?.user.id ?? null }
-  if (session) return { demo: false, userId: session.user.id }
+  if (store.get(DEMO_COOKIE)?.value === DEMO_COOKIE_VALUE) return { view: 'demo', userId: session?.user.id ?? null }
+
+  const token = store.get(SHARE_COOKIE)?.value
+  if (token) {
+    const share = await readShare(token)
+    if (share && isShareActive(share, Date.now())) {
+      return { view: 'shared', userId: share.userId, expiresAt: share.expiresAt }
+    }
+  }
+
+  if (session) return { view: 'account', userId: session.user.id }
 
   return null
 }
@@ -32,4 +65,25 @@ export async function enterDemo(): Promise<void> {
 export async function leaveDemo(): Promise<void> {
   const store = await cookies()
   store.delete(DEMO_COOKIE)
+}
+
+/**
+ * Unlike the demo cookie this one is httpOnly, because the token in it is the credential itself and
+ * nothing in the panel needs to read it: the shell learns about a shared view from the server, and
+ * entering one is always a fresh document load, so it cannot go stale behind the router cache.
+ * `expires` matches the link, so the browser drops it the moment the share does.
+ */
+export function setShareCookie(response: NextResponse, token: string, expiresAt: Date): void {
+  response.cookies.set(SHARE_COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    expires: expiresAt,
+  })
+}
+
+export async function leaveShare(): Promise<void> {
+  const store = await cookies()
+  store.delete(SHARE_COOKIE)
 }

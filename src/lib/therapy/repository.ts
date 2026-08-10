@@ -1,6 +1,6 @@
-import { and, asc, eq, gte, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, lt, lte, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { papChannel, papDay, papEvent, papFile, papImport, patientProfile } from '@/lib/db/pap-schema'
+import { papChannel, papDay, papEvent, papFile, papImport, patientProfile, therapyShare } from '@/lib/db/pap-schema'
 import type {
   CardBrand,
   ChannelId,
@@ -12,6 +12,7 @@ import type {
   SettingGroup,
 } from '@/lib/pap'
 import type { SessionBounds } from './day-index'
+import { isShareActive, type ShareLink } from './shares'
 
 export interface DayIndexEntry {
   date: string
@@ -277,6 +278,57 @@ export async function deleteAllTherapyData(userId: string): Promise<number> {
   const removed = await db.delete(papImport).where(eq(papImport.userId, userId)).returning({ id: papImport.id })
 
   return removed.length
+}
+
+export async function createShare(userId: string, tokenHash: string, expiresAt: Date): Promise<string> {
+  const [row] = await db
+    .insert(therapyShare)
+    .values({ userId, tokenHash, expiresAt })
+    .returning({ id: therapyShare.id })
+
+  return row.id
+}
+
+/**
+ * The links that still open something, newest first. Expiry is compared here rather than in SQL so
+ * `isShareActive` stays the one place that rule lives.
+ */
+export async function listActiveShares(userId: string): Promise<ShareLink[]> {
+  const rows = await db
+    .select({ id: therapyShare.id, expiresAt: therapyShare.expiresAt })
+    .from(therapyShare)
+    .where(eq(therapyShare.userId, userId))
+    .orderBy(desc(therapyShare.createdAt))
+
+  const nowMs = Date.now()
+
+  return rows.filter((row) => isShareActive(row, nowMs))
+}
+
+export async function deleteShare(userId: string, id: string): Promise<boolean> {
+  const deleted = await db
+    .delete(therapyShare)
+    .where(and(eq(therapyShare.id, id), eq(therapyShare.userId, userId)))
+    .returning({ id: therapyShare.id })
+
+  return deleted.length > 0
+}
+
+export async function deleteExpiredShares(userId: string, before: Date): Promise<void> {
+  await db.delete(therapyShare).where(and(eq(therapyShare.userId, userId), lt(therapyShare.expiresAt, before)))
+}
+
+/**
+ * The owner behind a link, expiry included so the caller decides whether it still opens anything.
+ * Reading it here rather than filtering in SQL keeps that one rule in `isShareActive`.
+ */
+export async function findShareByTokenHash(tokenHash: string): Promise<{ userId: string; expiresAt: Date } | null> {
+  const [row] = await db
+    .select({ userId: therapyShare.userId, expiresAt: therapyShare.expiresAt })
+    .from(therapyShare)
+    .where(eq(therapyShare.tokenHash, tokenHash))
+
+  return row ?? null
 }
 
 export async function getProfile(userId: string): Promise<PatientProfile | null> {

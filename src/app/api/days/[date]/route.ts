@@ -50,7 +50,7 @@ export async function GET(request: Request, context: RouteContext<'/api/days/[da
   const { date } = await context.params
   if (!isPapDayKey(date)) return apiError('invalidRequest')
 
-  if (panel.demo) {
+  if (panel.view === 'demo') {
     const night = demoDay(Date.now(), date)
     if (!night) return apiError('notFound')
 

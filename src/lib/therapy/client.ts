@@ -3,6 +3,7 @@ import type { PapFile, PapImport } from '@/lib/pap'
 import { encodePapBundle } from '@/lib/pap/bundle'
 import { decodeDayPayload } from '@/lib/pap/day-payload'
 import type { DayIndexEntry, PatientProfile } from './repository'
+import type { ShareDurationMinutes } from './shares'
 
 export type { DayIndexEntry, PatientProfile }
 
@@ -60,6 +61,25 @@ export async function deleteAllTherapyData(): Promise<number> {
   const { removed } = (await (await request('/api/imports', { method: 'DELETE' })).json()) as { removed: number }
 
   return removed
+}
+
+/** The token comes back once, because only its hash is stored. */
+export async function createShareLink(minutes: ShareDurationMinutes): Promise<{ id: string; token: string }> {
+  return (await (
+    await request('/api/shares', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ minutes }),
+    })
+  ).json()) as { id: string; token: string }
+}
+
+export async function revokeShareLink(id: string): Promise<void> {
+  await request(`/api/shares/${id}`, { method: 'DELETE' })
+}
+
+export async function leaveSharedView(): Promise<void> {
+  await request('/api/share-view', { method: 'DELETE' })
 }
 
 export async function enterDemoMode(): Promise<void> {

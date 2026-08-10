@@ -1,7 +1,17 @@
 import type { MetadataRoute } from 'next'
 import { getSiteUrl } from '@/lib/site-url'
 
-const PRIVATE_ROUTES = ['/api/', '/panel', '/tr/panel', '/sign-in', '/tr/sign-in', '/sign-up', '/tr/sign-up']
+const PRIVATE_ROUTES = [
+  '/api/',
+  '/panel',
+  '/tr/panel',
+  '/share',
+  '/tr/share',
+  '/sign-in',
+  '/tr/sign-in',
+  '/sign-up',
+  '/tr/sign-up',
+]
 
 // Next caches this route by default, which would bake in whichever domain the build machine knew
 // about. A self hosted image is built before anyone has said where it will be served from.

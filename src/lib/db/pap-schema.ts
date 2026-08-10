@@ -56,6 +56,24 @@ export const patientProfile = pgTable('patient_profile', {
     .notNull(),
 })
 
+export const therapyShare = pgTable(
+  'therapy_share',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    // Only the SHA-256 of the link is here. See share-token.server.ts.
+    tokenHash: text('token_hash').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('therapy_share_token_idx').on(table.tokenHash),
+    index('therapy_share_user_idx').on(table.userId),
+  ],
+)
+
 export const papImport = pgTable(
   'pap_import',
   {

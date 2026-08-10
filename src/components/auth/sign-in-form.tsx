@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { GoogleButton } from '@/components/auth/google-button'
 import { ExampleButton } from '@/components/panel/example-button'
 import { Button } from '@/components/ui/button'
@@ -9,18 +9,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Link, useRouter } from '@/i18n/navigation'
-import { trackEvent } from '@/lib/analytics'
-import { signIn } from '@/lib/auth-client'
+import type { Locale } from '@/i18n/routing'
+import { signIn, twoFactor } from '@/lib/auth-client'
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, authErrorKey, type AuthErrorMessageKey } from '@/lib/auth-errors'
+import { AUTH_LOCALE_HEADER } from '@/lib/auth-locale'
+import { verificationCallbackPath } from '@/lib/auth-verification'
 
 export function SignInForm({
   googleEnabled,
   initialErrorKey = null,
+  verified = false,
 }: {
   googleEnabled: boolean
   initialErrorKey?: AuthErrorMessageKey | null
+  verified?: boolean
 }) {
   const t = useTranslations('Auth')
+  const locale = useLocale() as Locale
   const router = useRouter()
   const [errorKey, setErrorKey] = useState<AuthErrorMessageKey | null>(initialErrorKey)
   const [pending, setPending] = useState(false)
@@ -31,10 +36,15 @@ export function SignInForm({
     setPending(true)
     setErrorKey(null)
 
-    const { error } = await signIn.email({
-      email: String(form.get('email')),
-      password: String(form.get('password')),
-    })
+    const { data, error } = await signIn.email(
+      {
+        email: String(form.get('email')),
+        password: String(form.get('password')),
+        // A blocked sign-in re-sends the confirmation link, and this is where that link points.
+        callbackURL: verificationCallbackPath(locale),
+      },
+      { headers: { [AUTH_LOCALE_HEADER]: locale } },
+    )
 
     if (error) {
       setErrorKey(authErrorKey(error.code))
@@ -42,7 +52,15 @@ export function SignInForm({
       return
     }
 
-    trackEvent('sign_in', { method: 'email' })
+    // The password was right but the browser is new, so there is no session yet. Sending the code
+    // from here rather than from the next screen keeps it one deliberate call and starts the mail
+    // while that page is still loading.
+    if (data && 'twoFactorRedirect' in data) {
+      await twoFactor.sendOtp({ fetchOptions: { headers: { [AUTH_LOCALE_HEADER]: locale } } })
+      router.push('/sign-in/verify')
+      return
+    }
+
     router.push('/panel/overview')
     router.refresh()
   }
@@ -56,6 +74,11 @@ export function SignInForm({
       <CardContent>
         <form onSubmit={handleSubmit}>
           <FieldGroup>
+            {verified ? (
+              <p className="text-sm text-[var(--severity-normal)]" role="status">
+                {t('verifiedNotice')}
+              </p>
+            ) : null}
             <Field>
               <FieldLabel htmlFor="email">{t('email')}</FieldLabel>
               <Input id="email" name="email" type="email" autoComplete="email" required />

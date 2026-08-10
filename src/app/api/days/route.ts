@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
   if ((from !== null && !isPapDayKey(from)) || (to !== null && !isPapDayKey(to))) return apiError('invalidRequest')
 
-  if (context.demo) {
+  if (context.view === 'demo') {
     const days = demoDayIndex(Date.now()).filter((day) => (!from || day.date >= from) && (!to || day.date <= to))
     return Response.json({ days })
   }

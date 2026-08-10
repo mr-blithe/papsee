@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { ThemeProvider } from '@/components/theme-provider'
+import { RouteLoadingController } from '@/components/route-loading-indicator'
 import { routing } from '@/i18n/routing'
 import { getSiteUrl } from '@/lib/site-url'
 import { cn } from '@/lib/utils'
@@ -35,7 +36,10 @@ export default async function LocaleLayout({ children, params }: LayoutProps<'/[
     <html lang={locale} className={cn('font-sans', geist.variable)} suppressHydrationWarning>
       <body className="bg-background text-foreground">
         <NextIntlClientProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <RouteLoadingController />
+            {children}
+          </ThemeProvider>
         </NextIntlClientProvider>
       </body>
     </html>

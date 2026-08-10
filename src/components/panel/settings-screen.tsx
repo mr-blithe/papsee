@@ -23,6 +23,7 @@ import { deleteUser } from '@/lib/auth-client'
 import { deleteAllTherapyData, TherapyApiError } from '@/lib/therapy/client'
 import { EXPORT_DOWNLOADS } from '@/lib/therapy/export'
 import { PanelCard, PanelCardHeader } from './panel-card'
+import { SharingCard } from './sharing-card'
 
 const EXPORT_PATH = '/api/export'
 const AFTER_DELETE_PATH = '/'
@@ -35,10 +36,12 @@ export function SettingsScreen({
   email,
   nights,
   hasPassword,
+  shareLinks,
 }: {
   email: string
   nights: number
   hasPassword: boolean
+  shareLinks: { id: string; endsIn: string }[]
 }) {
   const t = useTranslations('Settings')
   const actions = useTranslations('Actions')
@@ -151,6 +154,8 @@ export function SettingsScreen({
           <p className="mt-2.5 text-xs text-muted-foreground">{t('exportNote')}</p>
         </div>
       </PanelCard>
+
+      <SharingCard links={shareLinks} />
 
       <Collapsible>
         <PanelCard className="border-destructive/40">

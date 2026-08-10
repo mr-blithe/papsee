@@ -22,6 +22,7 @@ export const CONTRACT_SEEDS = [
         <li><strong>Account data:</strong> name, email address, authentication records and, if you choose Google sign-in, identifiers supplied by Google.</li>
         <li><strong>Profile data:</strong> optional date of birth, height, weight, diagnosis date, diagnosis AHI and device guide selection.</li>
         <li><strong>Health and device data:</strong> files imported from your PAP device, device information, therapy settings, sessions, respiratory events, signal samples, derived indices, charts and statistics. This may be health data and special category personal data.</li>
+        <li><strong>Sharing data:</strong> when you create a link to show your therapy data to someone else, we store a one-way hash of that link, the moment it stops working and the moment you created it. The link itself is never stored, so it cannot be shown to you again or recovered by us.</li>
         <li><strong>Contact data:</strong> your name, email address, selected topic, message and our correspondence with you.</li>
         <li><strong>Technical data:</strong> session and security records, IP address, request metadata, device and browser information, and service error records needed to operate and protect the service.</li>
       </ul>
@@ -31,6 +32,7 @@ export const CONTRACT_SEEDS = [
       <ul>
         <li>We process account and authentication data to create and secure your account and provide the service you request. The legal ground is performance of the service contract.</li>
         <li>We process imported PAP therapy data to parse, store and present your nights, history and reports. Because this can reveal health information, we rely on your explicit consent where required by the GDPR. Consent is voluntary and may be withdrawn at any time. Withdrawal does not affect processing already carried out lawfully.</li>
+        <li>We process a share link so that whoever holds it can read the nights of the account that created it, on screen and without changing anything, for as long as that link works. Profile details such as name, date of birth, height, weight and diagnosis are not shown to them, and the link cannot download the history. The legal ground is performing the service you asked for, on your explicit instruction. You decide who receives the link and how long it lasts, and you can stop it at any time.</li>
         <li>We process technical and security data to prevent abuse, investigate faults and protect accounts and systems. The legal ground is our legitimate interest in operating a secure service, except where your rights and interests override that interest, and compliance with legal obligations where applicable.</li>
         <li>We process contact messages to answer your request. The legal ground is taking steps at your request, performing the service contract, or our legitimate interest in responding, depending on the subject.</li>
         <li>We process a small set of usage events to count how the service is used and to see where it fails. The legal ground is our legitimate interest in maintaining and improving the service, except where your rights and interests override that interest. Imported therapy data is never part of these events.</li>
@@ -49,7 +51,7 @@ export const CONTRACT_SEEDS = [
         <li>The configured email provider processes contact messages sent through the contact form.</li>
         <li>Public authorities or other recipients may receive data only when disclosure is legally required or necessary to establish, exercise or defend legal claims.</li>
       </ul>
-      <p>We do not make imported PAP files or therapy results public.</p>
+      <p>We do not make imported PAP files or therapy results public. A share link you create is the one way another person can read your nights, it discloses them to whoever holds the link, and choosing to send it is yours alone.</p>
 
       <h2>International transfers</h2>
       <p>The application and primary database are hosted in the European Union. Some providers may process limited account, security, authentication or contact data in other countries. When a transfer is subject to the GDPR, it must rely on a valid transfer mechanism, such as an adequacy decision, appropriate contractual safeguards, or explicit consent where that ground is legally available. You may ask for information about the safeguard relevant to your data through the contact page.</p>
@@ -58,6 +60,7 @@ export const CONTRACT_SEEDS = [
       <ul>
         <li>Account, profile and imported therapy data are kept while your account remains open, unless you delete an import or request account deletion earlier.</li>
         <li>Contact correspondence may be kept for up to two years after the request is closed so we can follow up and document the response.</li>
+        <li>A share link record is kept until you stop it or it stops working, and expired records are removed the next time you create a link. Deleting your account removes them with everything else.</li>
         <li>Security and service logs are normally kept for up to 90 days unless a specific incident requires longer investigation.</li>
         <li>Data required by law or needed for a legal claim may be kept for the applicable statutory period.</li>
         <li>Deleted data may remain in encrypted, access-restricted backups until the backup rotation completes. It is not restored for ordinary use.</li>
@@ -65,7 +68,7 @@ export const CONTRACT_SEEDS = [
       <p>When a retention period ends, data is deleted or irreversibly anonymised.</p>
 
       <h2>Cookies and local storage</h2>
-      <p>PapSee uses storage necessary for sign-in, security, language, theme, panel preferences and demo mode. These features are needed to provide the service or remember a choice you made.</p>
+      <p>PapSee uses storage necessary for sign-in, security, language, theme, panel preferences, demo mode and shared views. These features are needed to provide the service or remember a choice you made. Opening a share link sets a cookie in the reader's browser that holds the link and nothing else; it is not readable by scripts and it expires with the link.</p>
       <p>PapSee also sets a product analytics cookie, provided by PostHog, that counts pages opened and a short list of named actions: creating an account, signing in, finishing an import, opening the example patient and sending a contact message. Web addresses are stripped of their query and fragment before they leave your browser, so the date of a night you were reading is never sent. Clicks, form contents, keystrokes and screen recordings are not collected, and imported therapy data is never sent. PapSee does not use advertising cookies and does not build advertising or profiling audiences.</p>
 
       <h2>Security</h2>
@@ -110,6 +113,7 @@ export const CONTRACT_SEEDS = [
         <li><strong>Hesap verileri:</strong> ad, e-posta adresi, kimlik doğrulama kayıtları ve Google ile giriş yapmayı seçerseniz Google tarafından sağlanan tanımlayıcılar.</li>
         <li><strong>Profil verileri:</strong> isteğe bağlı doğum tarihi, boy, kilo, tanı tarihi, tanı AHI değeri ve cihaz rehberi seçimi.</li>
         <li><strong>Sağlık ve cihaz verileri:</strong> PAP cihazınızdan içe aktardığınız dosyalar, cihaz bilgileri, tedavi ayarları, kullanım aralıkları, solunum olayları, sinyal örnekleri, hesaplanan indeksler, grafikler ve istatistikler. Bunlar sağlık verisi ve özel nitelikli kişisel veri olabilir.</li>
+        <li><strong>Paylaşım verileri:</strong> tedavi verilerinizi başka birine göstermek için bir bağlantı oluşturduğunuzda, bu bağlantının tek yönlü özetini, ne zaman çalışmayı bırakacağını ve ne zaman oluşturulduğunu saklarız. Bağlantının kendisi hiçbir zaman saklanmaz; bu nedenle size yeniden gösterilemez ve bizim tarafımızdan geri getirilemez.</li>
         <li><strong>İletişim verileri:</strong> adınız, e-posta adresiniz, seçtiğiniz konu, mesajınız ve sizinle yaptığımız yazışmalar.</li>
         <li><strong>Teknik veriler:</strong> hizmeti çalıştırmak ve korumak için gereken oturum ve güvenlik kayıtları, IP adresi, istek bilgileri, cihaz ve tarayıcı bilgileri ile hizmet hata kayıtları.</li>
       </ul>
@@ -119,6 +123,7 @@ export const CONTRACT_SEEDS = [
       <ul>
         <li>Hesabınızı oluşturmak, güvenliğini sağlamak ve talep ettiğiniz hizmeti sunmak için hesap ve kimlik doğrulama verilerini işleriz. Hukuki sebep hizmet sözleşmesinin kurulması ve ifasıdır.</li>
         <li>Gecelerinizi, geçmişinizi ve raporlarınızı ayrıştırmak, saklamak ve göstermek için içe aktarılan PAP tedavi verilerini işleriz. Bu veriler sağlık bilgisi açıklayabildiği için GDPR ve KVKK'nın gerekli kıldığı durumlarda açık rızanıza dayanırız. Rıza isteğe bağlıdır ve her zaman geri alınabilir. Rızanın geri alınması, daha önce hukuka uygun olarak yapılan işlemleri etkilemez.</li>
+        <li>Bir paylaşım bağlantısını, bağlantı çalıştığı sürece onu elinde tutan kişinin bağlantıyı oluşturan hesabın gecelerini ekranda ve hiçbir şeyi değiştirmeden okuyabilmesi için işleriz. Ad, doğum tarihi, boy, kilo ve tanı gibi profil bilgileri bu kişiye gösterilmez ve bağlantı geçmişi indiremez. Hukuki sebep, açık talimatınız üzerine istediğiniz hizmetin sunulmasıdır. Bağlantıyı kimin alacağına ve ne kadar süre çalışacağına siz karar verirsiniz ve dilediğiniz zaman durdurabilirsiniz.</li>
         <li>Kötüye kullanımı önlemek, hataları incelemek ve hesaplar ile sistemleri korumak için teknik ve güvenlik verilerini işleriz. Hukuki sebep, hak ve menfaatlerinizin üstün gelmediği ölçüde güvenli bir hizmet işletmeye yönelik meşru menfaatimiz ve uygulanabildiği durumlarda hukuki yükümlülüklerimizdir.</li>
         <li>Talebinizi yanıtlamak için iletişim mesajlarını işleriz. Konuya göre hukuki sebep talebiniz üzerine işlem yapılması, hizmet sözleşmesinin ifası veya yanıt vermeye yönelik meşru menfaatimizdir.</li>
         <li>Hizmetin ne kadar kullanıldığını saymak ve nerede hata verdiğini görmek için az sayıda kullanım olayını işleriz. Hukuki sebep, hak ve menfaatlerinizin üstün gelmediği ölçüde hizmeti sürdürmeye ve geliştirmeye yönelik meşru menfaatimizdir. İçe aktarılan tedavi verileri bu olayların hiçbir parçası değildir.</li>
@@ -137,7 +142,7 @@ export const CONTRACT_SEEDS = [
         <li>Yapılandırılmış e-posta sağlayıcısı, iletişim formu üzerinden gönderilen mesajları işler.</li>
         <li>Kamu kurumları veya diğer alıcılar yalnızca açıklamanın hukuken zorunlu olduğu ya da hukuki taleplerin oluşturulması, kullanılması veya savunulması için gerektiği durumlarda veri alabilir.</li>
       </ul>
-      <p>İçe aktarılan PAP dosyalarını veya tedavi sonuçlarını herkese açık hâle getirmeyiz.</p>
+      <p>İçe aktarılan PAP dosyalarını veya tedavi sonuçlarını herkese açık hâle getirmeyiz. Oluşturduğunuz paylaşım bağlantısı, başka bir kişinin gecelerinizi okuyabilmesinin tek yoludur; bu geceler bağlantıyı elinde tutan kişiye açıklanır ve bağlantıyı gönderme kararı yalnızca size aittir.</p>
 
       <h2>Yurt dışına veri aktarımı</h2>
       <p>Uygulama ve birincil veritabanı Avrupa Birliği'nde barındırılır. Bazı sağlayıcılar sınırlı hesap, güvenlik, kimlik doğrulama veya iletişim verilerini başka ülkelerde işleyebilir. GDPR veya KVKK kapsamındaki bir aktarım, yeterlilik kararı, uygun sözleşmesel güvence veya bu hukuki sebebin kullanılabildiği durumlarda açık rıza gibi geçerli bir aktarım mekanizmasına dayanmalıdır. Verilerinize uygulanan güvence hakkında iletişim sayfasından bilgi isteyebilirsiniz.</p>
@@ -146,6 +151,7 @@ export const CONTRACT_SEEDS = [
       <ul>
         <li>Hesap, profil ve içe aktarılan tedavi verileri, bir içe aktarımı silmediğiniz veya daha erken hesap silme talebinde bulunmadığınız sürece hesabınız açıkken saklanır.</li>
         <li>İletişim yazışmaları, takip yapabilmek ve yanıtı belgelemek için talep kapatıldıktan sonra en fazla iki yıl saklanabilir.</li>
+        <li>Paylaşım bağlantısı kaydı, siz durdurana veya bağlantı çalışmayı bırakana kadar saklanır; süresi dolmuş kayıtlar yeni bir bağlantı oluşturduğunuzda silinir. Hesabınızı sildiğinizde diğer her şeyle birlikte kaldırılır.</li>
         <li>Güvenlik ve hizmet kayıtları, belirli bir olay daha uzun inceleme gerektirmedikçe normalde en fazla 90 gün saklanır.</li>
         <li>Kanunen saklanması gereken veya hukuki bir talep için gerekli veriler, geçerli kanuni süre boyunca saklanabilir.</li>
         <li>Silinen veriler, yedekleme döngüsü tamamlanana kadar şifreli ve erişimi kısıtlı yedeklerde kalabilir. Olağan kullanım için geri yüklenmez.</li>
@@ -153,7 +159,7 @@ export const CONTRACT_SEEDS = [
       <p>Saklama süresi sona erdiğinde veriler silinir veya geri döndürülemeyecek biçimde anonimleştirilir.</p>
 
       <h2>Çerezler ve yerel depolama</h2>
-      <p>PapSee giriş, güvenlik, dil, tema, panel tercihleri ve demo modu için gerekli depolama araçlarını kullanır. Bunlar hizmeti sunmak veya yaptığınız bir seçimi hatırlamak için gereklidir.</p>
+      <p>PapSee giriş, güvenlik, dil, tema, panel tercihleri, demo modu ve paylaşılan görünümler için gerekli depolama araçlarını kullanır. Bunlar hizmeti sunmak veya yaptığınız bir seçimi hatırlamak için gereklidir. Bir paylaşım bağlantısını açmak, okuyan kişinin tarayıcısında yalnızca bağlantıyı tutan bir çerez oluşturur; bu çerez betikler tarafından okunamaz ve bağlantıyla birlikte sona erer.</p>
       <p>PapSee ayrıca PostHog tarafından sağlanan bir ürün analitiği çerezi kullanır. Bu çerez, açılan sayfaları ve adı belirli birkaç işlemi sayar: hesap oluşturma, giriş yapma, içe aktarımı tamamlama, örnek hastayı açma ve iletişim mesajı gönderme. Web adresleri tarayıcınızdan çıkmadan önce sorgu ve parça bölümlerinden arındırılır, böylece okuduğunuz gecenin tarihi hiçbir zaman gönderilmez. Tıklamalar, form içerikleri, tuş vuruşları ve ekran kayıtları toplanmaz; içe aktarılan tedavi verileri hiçbir zaman gönderilmez. PapSee reklam çerezi kullanmaz ve reklam veya profilleme kitleleri oluşturmaz.</p>
 
       <h2>Güvenlik</h2>

@@ -41,17 +41,14 @@ describe('contact input', () => {
 })
 
 describe('contact email', () => {
-  it('uses the configured sender and administrator recipient while replies go to the visitor', () => {
+  it('reaches the administrator while replies go to the visitor', () => {
     const input = parseContactInput(COMPLETE)
     expect(input).not.toBeNull()
 
     expect(
       buildContactMail(
         input!,
-        {
-          from: 'PapSee <contact@papsee.example>',
-          adminEmail: 'admin@papsee.example',
-        },
+        { adminEmail: 'admin@papsee.example' },
         {
           subject: '[PapSee] Contact: privacy',
           name: 'Name',
@@ -62,7 +59,6 @@ describe('contact email', () => {
         },
       ),
     ).toEqual({
-      from: 'PapSee <contact@papsee.example>',
       to: 'admin@papsee.example',
       replyTo: { name: 'Ada Lovelace', address: 'ada@example.com' },
       subject: '[PapSee] Contact: privacy',

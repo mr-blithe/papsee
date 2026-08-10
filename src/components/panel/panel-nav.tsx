@@ -21,6 +21,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { Link, usePathname } from '@/i18n/navigation'
+import type { PanelView } from '@/lib/panel-context'
 import { useDemoMode } from './use-demo-mode'
 import { UserMenu } from './user-menu'
 
@@ -101,10 +102,10 @@ function ImportLink() {
   )
 }
 
-export function PanelSidebar({ onboarded, demo }: { onboarded: boolean; demo: boolean }) {
+export function PanelSidebar({ onboarded, view }: { onboarded: boolean; view: PanelView | null }) {
   const t = useTranslations('Nav')
-  const inDemo = useDemoMode(demo)
-  const canImport = onboarded && !inDemo
+  const inDemo = useDemoMode(view === 'demo')
+  const canImport = onboarded && view === 'account' && !inDemo
   const metadata = useTranslations('Metadata')
   const { setOpenMobile } = useSidebar()
 
@@ -147,10 +148,18 @@ export function PanelSidebar({ onboarded, demo }: { onboarded: boolean; demo: bo
   )
 }
 
-export function PanelTopBar({ email, onboarded, demo }: { email: string | null; onboarded: boolean; demo: boolean }) {
+export function PanelTopBar({
+  email,
+  onboarded,
+  view,
+}: {
+  email: string | null
+  onboarded: boolean
+  view: PanelView | null
+}) {
   const t = useTranslations('Nav')
-  const inDemo = useDemoMode(demo)
-  const canImport = onboarded && !inDemo
+  const inDemo = useDemoMode(view === 'demo')
+  const canImport = onboarded && view === 'account' && !inDemo
   const { isMobile, open, openMobile } = useSidebar()
   const menuOpen = isMobile ? openMobile : open
 
@@ -176,7 +185,7 @@ export function PanelTopBar({ email, onboarded, demo }: { email: string | null; 
         ) : null}
         <LanguageSwitcher />
         <ThemeToggle />
-        {email ? <UserMenu email={email} demo={inDemo} /> : null}
+        {email ? <UserMenu email={email} view={view ?? 'account'} /> : null}
       </div>
     </div>
   )

@@ -170,8 +170,9 @@ library below is a rule a test should pin, because each one is a silent wrong nu
 ```text
 src/app/
   [locale]/      Every page. Locale segment, see Localization.
-    (auth)/      Sign in and sign up.
+    (auth)/      Sign in, sign up, and the new-browser code screen at sign-in/verify.
     panel/       Signed in panel: onboarding, import, overview and therapy.
+    share/       [token]/route.ts redeems a share link. The page itself is where a dead link lands.
   api/           Route handlers. Deliberately outside [locale].
   icon.svg       Favicon. apple-icon.tsx generates the touch icon from the same mark.
   globals.css    Theme tokens. Written by the shadcn CLI too.
@@ -186,14 +187,15 @@ src/global.d.ts  Declares Messages on next-intl's AppConfig, so a missing key is
 src/lib/         Utilities, including the cn helper.
   auth.ts        Better Auth server instance.
   auth-client.ts Better Auth React client.
+  mail.ts        SMTP configuration and address checks. mail.server.ts is the one transport.
   session.ts     getSession(), the cached server side session read.
-  panel-context.ts  Who is reading the panel, and whether they are in demo mode.
+  panel-context.ts  Whose data the panel is reading, and under what right. See the view union.
   api.ts         apiError(), apiErrorKey() and the request size limit the route handlers share.
   terms.ts       The ids the term hints explain. messages.test.ts checks both catalogs against it.
   analytics.ts   The events PapSee reports, and the URL redaction every one of them passes through.
   db/            Drizzle client, the generated auth schema and the hand written pap schema.
   pap/           PAP data import library. Framework free, see below.
-  therapy/       Stored imports: repository, day index, trends, demo data, the browser side client.
+  therapy/       Stored imports: repository, day index, trends, demo data, shares, the browser side client.
 src/proxy.ts     next-intl middleware composed with the auth guard.
 src/instrumentation-client.ts  PostHog, production builds only. See Product Constraints.
 messages/        en.json and tr.json.
@@ -206,7 +208,8 @@ Where the application actually stands: `/` is the landing page and `/panel` redi
 in reader is walked through `/panel/onboarding` for a profile, then `/panel/import` for a device specific guide and the
 upload, and after that `/panel/overview` and `/panel/therapy` read what was stored. `panel-access.ts` enforces that
 order in the page: no profile sends you to onboarding, no stored days sends you to import. `/panel/settings` holds the
-profile, the export downloads and the destructive actions, and `/privacy` and `/terms` render the seeded contracts.
+profile, the export downloads, the share links and the destructive actions, `/share/[token]` redeems a link and `/share`
+is where a dead one lands, and `/privacy` and `/terms` render the seeded contracts.
 
 ### The stored import API
 
@@ -227,6 +230,10 @@ GET    /api/profile              the patient profile
 PUT    /api/profile              validated by parseProfileInput, never trusted raw
 POST   /api/demo                 enter the example patient
 DELETE /api/demo                 leave it
+POST   /api/shares               open a share link, returns its token the only time it is readable
+DELETE /api/shares/[id]          stop one link
+DELETE /api/share-view           leave a shared view, which only drops the reader's own cookie
+GET    /share/[token]            redeem a link: a route handler under [locale], not a page
 ```
 
 - **The export builds tables once and serves them two ways.** `src/lib/therapy/export-tables.ts` turns stored days
@@ -247,6 +254,11 @@ DELETE /api/demo                 leave it
   read back are identical by construction rather than by two formulas agreeing. `scale` and `offset` are
   `doublePrecision` on purpose: flow's gain is 0.12, which no float32 holds, and rounding it would break that equality.
   `src/lib/pap/digital.ts` owns the one derivation both sides use.
+- **`PanelContext` is a three way union, and `view` is what decides everything.** `account`, `demo` or `shared`, in
+  `src/lib/panel-context.ts`. A mutating route asks `context.view !== 'account'` and answers with
+  `readOnlyErrorCode(context.view)`; a reading route asks `context.view === 'demo'` to decide between the generator and
+  the database. Never write a guard as "not demo": that is the shape this union replaced, and under it every share
+  reader would have been able to write to the account they were only shown.
 - **Demo mode is read only on the server, not just in the UI.** `getPanelContext()` reports it from a cookie, every
   mutating route answers `403 readOnlyDemo`, and the two read routes serve `src/lib/therapy/demo.ts` instead of the
   database. The generator is the same `writeSyntheticCard` the tests use and it travels the same day payload a stored
@@ -259,6 +271,30 @@ DELETE /api/demo                 leave it
   carries no secret, `POST /api/demo` sets it for anyone who asks, and being readable is what lets the shell agree with
   the server on every navigation and whenever the tab regains focus. The server value is still passed in, as the first
   paint before hydration. Anything else in the shell that has to track a cookie needs the same treatment.
+- **A share link is a credential, so its cookie is the opposite of the demo one.** `papsee.share` is `httpOnly` and
+  holds the token itself; nothing in the panel reads it, the shell learns about a shared view from the server, and
+  entering one is always a full document load through `/share/[token]`, so it cannot go stale behind the router cache
+  the way a demo flag did. Its `expires` matches the link, so the browser drops it when the link dies.
+- **Only the hash of a link is stored.** `therapy_share.token_hash` is the SHA-256 of a 32 byte token from
+  `randomBytes`, minted and hashed in `src/lib/therapy/share-token.server.ts`. A single fast hash is right here where
+  bcrypt would not be: there are 256 bits of entropy and nothing to slow down. The consequence is that a link cannot be
+  shown twice, which is why `POST /api/shares` returns the token and no read route ever does.
+- **Three cookies can sit in one browser, so the order they are read in is a safety property.** `getPanelContext()`
+  takes demo first, then a share, then the reader's own session. Demo first because synthetic nights must never be
+  overtaken by somebody's real ones, and the redeem route deletes that cookie so the two cannot fight. A share ahead of
+  the session because a reader who has an account of their own and follows a link came to read what was shared, not
+  their own history. Every combination of the three, including a stale or forged one, is enumerated in
+  `panel-context.test.ts`; add the row before changing the order.
+- **What a link opens is the nights and nothing else.** The day index and a night, read only, on screen. Three refusals
+  are deliberate and each one is a `403 notInSharedView` rather than an empty answer: `GET /api/export`, because taking
+  the whole history away as a file is the owner's alone; `GET /api/profile`, and with it the profile the overview page
+  would otherwise pass down, because a name, a date of birth, a height, a weight and a diagnosis were never part of what
+  was shared, so the AHI trend simply loses its diagnosis reference line; and every mutating route, as
+  `403 readOnlyShare`. `requireAccount` sends a shared view to the overview, which is what keeps onboarding, import and
+  settings out of reach, and `requireStoredDays` turns a link to an account with no nights into the `/share` page rather
+  than putting a reader in front of the import screen. Anything added to the panel that reads more than the nights has
+  to decide where it stands here. Lengths run from 15 minutes to three days, `SHARE_DURATION_MINUTES` is the whole
+  ladder, and a length outside it is refused rather than clamped.
 - **The commit parses server side, one night per slice.** `advanceCommit` opens with the card level files alone,
   writes a summary only row per night from `STR.edf`, then fills one night at a time until a time budget is spent.
   A year of nights therefore never needs a single request large enough to parse all of it, and the client's own parse
@@ -401,7 +437,10 @@ of your own on 5432, named by `DATABASE_URL`.
 - **The adapter lives in `@better-auth/drizzle-adapter`**, not in a `better-auth/adapters/*` subpath.
 - **`nextCookies()` must stay last** in the plugin array.
 - **The proxy guard is optimistic, on purpose.** `src/proxy.ts` uses `getSessionCookie`, which only parses a cookie and
-  never touches the database, so it costs nothing per request. It is not a security boundary.
+  never touches the database, so it costs nothing per request. It is not a security boundary. The share cookie opens the
+  same gate on **presence alone**, because the token behind it is checked against the database in `getPanelContext()`
+  and a stray cookie therefore buys nothing but a bounce one page later. The demo cookie is the exception that is read
+  by value: there is no later check to fall back on for that one.
 - **The real check belongs in the page.** `getSession()` from `src/lib/session.ts` is the cached server side read.
   Next.js is explicit that a layout is the wrong place for an auth check, because layouts do not re-render on
   navigation and do not stop nested segments from rendering. A layout may read the session to display it, as
@@ -416,8 +455,26 @@ of your own on 5432, named by `DATABASE_URL`.
   only name the plugin reads. The action is checked because both widgets share one site key, so without it a token
   minted for the contact form would be redeemable at sign up. That check also rules out Cloudflare's testing keys:
   their siteverify response carries no `action` at all.
+- **SMTP gates address confirmation and the new browser code together.** `parseSmtpEnvironment` decides whether
+  `requireEmailVerification`, the `emailVerification` block, the `twoFactor` plugin and the enrolment hooks exist at
+  all, the same way `isGoogleEnabled` gates Google, because a self hosted instance without a mailbox could otherwise
+  never register anyone. Arming one half without the other is a bug.
+- **Better Auth has no mandatory two factor mode.** `user.twoFactorEnabled` is `input: false` and
+  `/two-factor/enable` wants a live session and the password, neither of which exists at sign up, so
+  `databaseHooks.user.create` arms the flag and `two-factor-enrolment.ts` writes the `two_factor` row. That row is
+  load bearing: `/two-factor/verify-otp` refuses a sign in without one, and it holds the lockout counters. Its
+  `backupCodes` is a literal `[]` under `storeBackupCodes: 'plain'` because an encrypted empty string makes the
+  public `/two-factor/verify-backup-code` answer 500 instead of refusing.
+- **The plugin's hook matches `/sign-in/email` only**, so Google sign in has no code step and is not meant to.
+- **`/sign-up/email` answers a duplicate address with a generic success** once verification is on, rather than
+  `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL`. That is Better Auth protecting against enumeration, and it is why sign up
+  ends on a confirmation card and why `errorEmailTaken` no longer fires there.
+- **Account mail takes its language from `AUTH_LOCALE_HEADER`.** Better Auth's callbacks run under `/api/auth`,
+  outside `[locale]`, where next-intl always resolves the default locale, and `NEXT_LOCALE` is not a fallback: it is
+  only written when the cookie is stale or disagrees with `Accept-Language`. A new call that sends mail has to send
+  the header too.
 - Deleting a user cascades to `session` and `account`, and now to `patient_profile`, `pap_import`, `pap_day`,
-  `pap_event` and `pap_file` as well, which is what the GDPR and KVKK delete path will need.
+  `pap_event`, `pap_file` and `two_factor` as well, which is what the GDPR and KVKK delete path will need.
 
 ## Deployment
 
@@ -563,10 +620,11 @@ because a config value a test asserts is a config value restated twice. The even
 `analytics.ts` and nothing calls `posthog.capture` directly. `posthog.identify` is never called, so no person profile
 is built and no account is named to PostHog.
 
-**Cookies: essential, plus one for analytics.** Session, locale, theme and `papsee.demo` are strictly necessary. The
-demo cookie is not httpOnly, lasts a day, and only records that the reader asked to look at the example patient. The
-PostHog cookie is not strictly necessary, and the privacy policy in `src/lib/contract-seeds.ts` discloses it in both
-languages under legitimate interest. There is no consent banner. Adding another non-essential cookie means revisiting
+**Cookies: essential, plus one for analytics.** Session, locale, theme, `papsee.demo` and `papsee.share` are strictly
+necessary. The demo cookie is not httpOnly, lasts a day, and only records that the reader asked to look at the example
+patient. The share cookie is httpOnly, lasts as long as the link it carries and no longer, and is the credential for a
+shared view rather than a preference. The PostHog cookie is not strictly necessary, and the privacy policy in
+`src/lib/contract-seeds.ts` discloses all of them in both languages, the analytics one under legitimate interest. There is no consent banner. Adding another non-essential cookie means revisiting
 that decision rather than assuming it: a banner that consents to nothing is worse than none, so raise the tension.
 
 **The policy pages are content, not scaffolding.** `/privacy` and `/terms` ship in both languages, seeded from

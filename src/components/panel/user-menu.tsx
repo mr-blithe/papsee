@@ -16,18 +16,26 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Link, useRouter } from '@/i18n/navigation'
 import { signOut } from '@/lib/auth-client'
-import { leaveDemoMode } from '@/lib/therapy/client'
+import type { PanelView } from '@/lib/panel-context'
+import { leaveDemoMode, leaveSharedView } from '@/lib/therapy/client'
+import { useDemoMode } from './use-demo-mode'
 
-export function UserMenu({ email, demo }: { email: string; demo: boolean }) {
+export function UserMenu({ email, view }: { email: string; view: PanelView }) {
   const t = useTranslations('Auth')
   const actions = useTranslations('Actions')
   const demoCopy = useTranslations('Demo')
+  const sharing = useTranslations('Sharing')
   const router = useRouter()
   const [pending, setPending] = useState(false)
+  const inDemo = useDemoMode(view === 'demo')
+  const reading = inDemo ? 'demo' : view
 
   async function handleSignOut() {
     setPending(true)
-    if (demo) await leaveDemoMode()
+    // Neither cookie is the session, so signing out without dropping them would leave the reader
+    // looking at borrowed data with no account behind it.
+    if (reading === 'demo') await leaveDemoMode()
+    if (reading === 'shared') await leaveSharedView()
     await signOut()
     router.replace('/sign-in')
     router.refresh()
@@ -46,19 +54,21 @@ export function UserMenu({ email, demo }: { email: string; demo: boolean }) {
         <DropdownMenuGroup>
           <DropdownMenuLabel className="max-w-56 truncate font-normal">{email}</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {demo ? (
+          {reading === 'account' ? (
+            <DropdownMenuItem render={<Link href="/panel/settings" />}>
+              <SettingsIcon aria-hidden />
+              {actions('settings')}
+            </DropdownMenuItem>
+          ) : (
             <Tooltip>
               <TooltipTrigger render={<DropdownMenuItem disabled className="data-disabled:pointer-events-auto" />}>
                 <SettingsIcon aria-hidden />
                 {actions('settings')}
               </TooltipTrigger>
-              <TooltipContent side="left">{demoCopy('inExample')}</TooltipContent>
+              <TooltipContent side="left">
+                {reading === 'demo' ? demoCopy('inExample') : sharing('viewerNotice')}
+              </TooltipContent>
             </Tooltip>
-          ) : (
-            <DropdownMenuItem render={<Link href="/panel/settings" />}>
-              <SettingsIcon aria-hidden />
-              {actions('settings')}
-            </DropdownMenuItem>
           )}
           <DropdownMenuItem disabled={pending} onClick={() => void handleSignOut()}>
             <LogOut aria-hidden />

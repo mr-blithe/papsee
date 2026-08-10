@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
+import { MailCheck } from 'lucide-react'
 import { GoogleButton } from '@/components/auth/google-button'
 import { ExampleButton } from '@/components/panel/example-button'
 import { TURNSTILE_RESPONSE_FIELD, TurnstileWidget, resetTurnstile } from '@/components/turnstile-widget'
@@ -10,9 +11,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldSeparator } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Link, useRouter } from '@/i18n/navigation'
+import type { Locale } from '@/i18n/routing'
 import { trackEvent } from '@/lib/analytics'
 import { signUp } from '@/lib/auth-client'
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, authErrorKey, type AuthErrorMessageKey } from '@/lib/auth-errors'
+import { AUTH_LOCALE_HEADER } from '@/lib/auth-locale'
+import { verificationCallbackPath } from '@/lib/auth-verification'
 import { LEGAL_ACCEPTANCE_HEADER, LEGAL_ACCEPTANCE_VALUE } from '@/lib/legal-acceptance'
 
 const CAPTCHA_HEADER = 'x-captcha-response'
@@ -27,12 +31,14 @@ export function SignUpForm({
   initialErrorKey?: AuthErrorMessageKey | null
 }) {
   const t = useTranslations('Auth')
+  const locale = useLocale() as Locale
   const router = useRouter()
   const [errorKey, setErrorKey] = useState<AuthErrorMessageKey | null>(initialErrorKey)
   const [mismatch, setMismatch] = useState(false)
   const [legalAccepted, setLegalAccepted] = useState(false)
   const [legalMissing, setLegalMissing] = useState(false)
   const [pending, setPending] = useState(false)
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState<string | null>(null)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -55,14 +61,17 @@ export function SignUpForm({
 
     const headers = {
       [LEGAL_ACCEPTANCE_HEADER]: LEGAL_ACCEPTANCE_VALUE,
+      [AUTH_LOCALE_HEADER]: locale,
       ...(challenge ? { [CAPTCHA_HEADER]: String(form.get(TURNSTILE_RESPONSE_FIELD) ?? '') } : {}),
     }
 
-    const { error } = await signUp.email(
+    const email = String(form.get('email'))
+    const { data, error } = await signUp.email(
       {
         name: String(form.get('name')),
-        email: String(form.get('email')),
+        email,
         password: String(form.get('password')),
+        callbackURL: verificationCallbackPath(locale),
       },
       { headers },
     )
@@ -75,8 +84,43 @@ export function SignUpForm({
     }
 
     trackEvent('sign_up', { method: 'email' })
+
+    // A confirmation was asked for, so there is no session yet. Better Auth answers a duplicate
+    // address with the same shape on purpose, so this screen never reveals who already has an
+    // account. Without mail configured it signs the reader straight in instead.
+    if (!data?.token) {
+      setAwaitingConfirmation(email)
+      setPending(false)
+      return
+    }
+
     router.push('/panel/onboarding')
     router.refresh()
+  }
+
+  if (awaitingConfirmation) {
+    return (
+      <Card className="shadow-2xl shadow-foreground/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MailCheck className="size-5 text-[var(--accent-action)]" aria-hidden />
+            {t('verificationSentTitle')}
+          </CardTitle>
+          <CardDescription>{t('verificationSentBody', { email: awaitingConfirmation })}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground" role="status">
+            {t('verificationSentHint')}
+          </p>
+        </CardContent>
+        <CardFooter className="justify-center text-sm text-muted-foreground">
+          {t('toSignIn')}&nbsp;
+          <Link href="/sign-in" className="font-medium text-foreground underline underline-offset-4">
+            {t('toSignInLink')}
+          </Link>
+        </CardFooter>
+      </Card>
+    )
   }
 
   return (

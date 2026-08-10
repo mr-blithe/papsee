@@ -3,6 +3,7 @@
 import { NextRequest } from 'next/server'
 import { describe, expect, it } from 'vitest'
 import { DEMO_COOKIE, DEMO_COOKIE_VALUE } from '@/lib/demo-cookie'
+import { SHARE_COOKIE } from '@/lib/share-cookie'
 import { proxy } from './proxy'
 
 const ORIGIN = 'http://localhost:3000'
@@ -67,6 +68,28 @@ describe('panel protection', () => {
 
     expect(location(response)).toBe(null)
     expect(response.status).toBe(200)
+  })
+
+  it('lets a visitor holding a share link through to the panel', () => {
+    const response = proxy(request('/panel/overview', `${SHARE_COOKIE}=HqL3n8Mc0pQ7rTvB2sYd4Xf6ZjW1kA9eGuNiO5bC3xE`))
+
+    expect(location(response)).toBe(null)
+    expect(response.status).toBe(200)
+  })
+
+  it('keeps the Turkish prefix for a visitor holding a share link', () => {
+    const response = proxy(request('/tr/panel/overview', `${SHARE_COOKIE}=HqL3n8Mc0pQ7rTvB2sYd4Xf6ZjW1kA9eGuNiO5bC3xE`))
+
+    expect(location(response)).toBe(null)
+    expect(response.status).toBe(200)
+  })
+
+  it('leaves the link redeem route reachable without any cookie at all', () => {
+    for (const pathname of ['/share/HqL3n8Mc0pQ7rTvB2sYd4Xf6ZjW1kA9eGuNiO5bC3xE', '/share']) {
+      const response = proxy(request(pathname))
+
+      expect(location(response), pathname).toBe(null)
+    }
   })
 
   // The panel reads the demo cookie by value, so the guard has to as well. Opening the gate on the

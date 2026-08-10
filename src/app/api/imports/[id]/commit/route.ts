@@ -1,5 +1,5 @@
 import { apiError, isUuid } from '@/lib/api'
-import { getPanelContext } from '@/lib/panel-context'
+import { getPanelContext, readOnlyErrorCode } from '@/lib/panel-context'
 import { advanceCommit } from '@/lib/therapy/commit'
 
 // The route may run for a minute; the loop below stops well short of that so the response is always
@@ -11,7 +11,7 @@ const COMMIT_BUDGET_MS = 45_000
 export async function POST(request: Request, context: RouteContext<'/api/imports/[id]/commit'>) {
   const panel = await getPanelContext()
   if (!panel) return apiError('unauthorized')
-  if (panel.demo) return apiError('readOnlyDemo')
+  if (panel.view !== 'account') return apiError(readOnlyErrorCode(panel.view))
 
   const { id } = await context.params
   if (!isUuid(id)) return apiError('notFound')

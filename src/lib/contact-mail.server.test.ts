@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ContactMailConfigurationError, sendContactMail } from './contact-mail.server'
+import { sendContactMail } from './contact-mail.server'
+import { MailConfigurationError } from './mail.server'
 
 const INPUT = {
   name: 'Ada Lovelace',
@@ -36,6 +37,6 @@ describe('sendContactMail', () => {
     vi.stubEnv('ADMIN_EMAIL', 'admin@papsee.example')
 
     expect(process.env.NODE_ENV).toBe('test')
-    await expect(sendContactMail(INPUT, COPY)).rejects.toBeInstanceOf(ContactMailConfigurationError)
+    await expect(sendContactMail(INPUT, COPY)).rejects.toBeInstanceOf(MailConfigurationError)
   })
 })

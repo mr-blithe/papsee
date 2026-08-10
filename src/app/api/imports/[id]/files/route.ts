@@ -1,12 +1,12 @@
 import { apiError, isUuid, MAX_REQUEST_BODY_BYTES } from '@/lib/api'
-import { getPanelContext } from '@/lib/panel-context'
+import { getPanelContext, readOnlyErrorCode } from '@/lib/panel-context'
 import { decodePapBundle, PapBundleError } from '@/lib/pap/bundle'
 import { storeImportFiles } from '@/lib/therapy/repository'
 
 export async function POST(request: Request, context: RouteContext<'/api/imports/[id]/files'>) {
   const panel = await getPanelContext()
   if (!panel) return apiError('unauthorized')
-  if (panel.demo) return apiError('readOnlyDemo')
+  if (panel.view !== 'account') return apiError(readOnlyErrorCode(panel.view))
 
   const { id } = await context.params
   if (!isUuid(id)) return apiError('notFound')
