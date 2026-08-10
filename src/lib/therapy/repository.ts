@@ -1,0 +1,303 @@
+import { and, asc, eq, gte, lte, sql } from 'drizzle-orm'
+import { db } from '@/lib/db'
+import { papChannel, papDay, papEvent, papFile, papImport, patientProfile } from '@/lib/db/pap-schema'
+import type {
+  CardBrand,
+  ChannelId,
+  DaySettings,
+  DaySummary,
+  DeviceInfo,
+  PapEventType,
+  PapFile,
+  SettingGroup,
+} from '@/lib/pap'
+import type { SessionBounds } from './day-index'
+
+export interface DayIndexEntry {
+  date: string
+  startMs: number
+  endMs: number
+  usageMinutes: number
+  ahi: number
+  oai: number
+  cai: number
+  hi: number
+  reraIndex: number
+  leakP95: number | null
+  pressureP95: number | null
+  sessionCount: number
+}
+
+export interface PatientProfile {
+  bornOn: string | null
+  heightCm: number | null
+  weightKg: number | null
+  diagnosedOn: string | null
+  diagnosisAhi: number | null
+  deviceGuide: string | null
+}
+
+async function findOpenImport(userId: string, importId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ committedAt: papImport.committedAt })
+    .from(papImport)
+    .where(and(eq(papImport.id, importId), eq(papImport.userId, userId)))
+
+  return row !== undefined && row.committedAt === null
+}
+
+export async function createImport(userId: string): Promise<string> {
+  const [row] = await db.insert(papImport).values({ userId }).returning({ id: papImport.id })
+  return row.id
+}
+
+export async function storeImportFiles(userId: string, importId: string, files: PapFile[]): Promise<boolean> {
+  if (!(await findOpenImport(userId, importId))) return false
+  if (files.length === 0) return true
+
+  await db
+    .insert(papFile)
+    .values(files.map((file) => ({ userId, importId, path: file.path, bytes: Buffer.from(new Uint8Array(file.data)) })))
+    .onConflictDoUpdate({
+      target: [papFile.importId, papFile.path],
+      set: { bytes: sql`excluded.bytes` },
+    })
+
+  return true
+}
+
+export async function deleteImport(userId: string, importId: string): Promise<boolean> {
+  const deleted = await db
+    .delete(papImport)
+    .where(and(eq(papImport.id, importId), eq(papImport.userId, userId)))
+    .returning({ id: papImport.id })
+
+  return deleted.length > 0
+}
+
+export async function listDays(userId: string, from: string | null, to: string | null): Promise<DayIndexEntry[]> {
+  const rows = await db
+    .select({
+      date: papDay.date,
+      startMs: papDay.startMs,
+      endMs: papDay.endMs,
+      usageMinutes: papDay.usageMinutes,
+      ahi: papDay.ahi,
+      oai: papDay.oai,
+      cai: papDay.cai,
+      hi: papDay.hi,
+      reraIndex: papDay.reraIndex,
+      leakP95: papDay.leakP95,
+      pressureP95: papDay.pressureP95,
+      sessionBounds: papDay.sessionBounds,
+    })
+    .from(papDay)
+    .where(
+      and(eq(papDay.userId, userId), from ? gte(papDay.date, from) : undefined, to ? lte(papDay.date, to) : undefined),
+    )
+    .orderBy(asc(papDay.date))
+
+  return rows.map(({ sessionBounds, ...row }) => ({ ...row, sessionCount: (sessionBounds as SessionBounds[]).length }))
+}
+
+export async function countDays(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ days: sql<number>`count(*)::int` })
+    .from(papDay)
+    .where(eq(papDay.userId, userId))
+
+  return row?.days ?? 0
+}
+
+export interface StoredChannel {
+  id: string
+  sessionIndex: number
+  channelId: ChannelId
+  startMs: number
+  intervalMs: number
+  unit: string
+  scale: number
+  offset: number
+  length: number
+}
+
+export interface StoredDay {
+  id: string
+  date: string
+  startMs: number
+  endMs: number
+  summary: DaySummary | null
+  settings: DaySettings | null
+  sessionBounds: SessionBounds[]
+  brand: CardBrand | null
+  device: DeviceInfo | null
+  settingGroups: SettingGroup[]
+  unreadable: string[]
+  events: { sessionIndex: number; type: PapEventType; startMs: number; durationMs: number }[]
+  channels: StoredChannel[]
+}
+
+export async function readStoredDay(userId: string, date: string): Promise<StoredDay | null> {
+  const [day] = await db
+    .select({
+      id: papDay.id,
+      date: papDay.date,
+      startMs: papDay.startMs,
+      endMs: papDay.endMs,
+      summary: papDay.summary,
+      settings: papDay.settings,
+      sessionBounds: papDay.sessionBounds,
+      brand: papImport.brand,
+      device: papImport.device,
+      settingGroups: papImport.settingGroups,
+      unreadable: papImport.unreadable,
+    })
+    .from(papDay)
+    .innerJoin(papImport, eq(papImport.id, papDay.importId))
+    .where(and(eq(papDay.userId, userId), eq(papDay.date, date)))
+
+  if (!day) return null
+
+  const [events, channels] = await Promise.all([
+    db
+      .select({
+        sessionIndex: papEvent.sessionIndex,
+        type: papEvent.type,
+        startMs: papEvent.startMs,
+        durationMs: papEvent.durationMs,
+      })
+      .from(papEvent)
+      .where(eq(papEvent.dayId, day.id))
+      .orderBy(asc(papEvent.startMs)),
+    db
+      .select({
+        id: papChannel.id,
+        sessionIndex: papChannel.sessionIndex,
+        channelId: papChannel.channelId,
+        startMs: papChannel.startMs,
+        intervalMs: papChannel.intervalMs,
+        unit: papChannel.unit,
+        scale: papChannel.scale,
+        offset: papChannel.offset,
+        length: sql<number>`octet_length(${papChannel.samples})::int`,
+      })
+      .from(papChannel)
+      .where(eq(papChannel.dayId, day.id))
+      .orderBy(asc(papChannel.sessionIndex), asc(papChannel.channelId)),
+  ])
+
+  return { ...day, events, channels }
+}
+
+/**
+ * Every waveform block of one night, in one round trip. Read separately from `readStoredDay` so a
+ * conditional request that answers `304` never pulls the megabytes it is not going to send.
+ */
+export async function readDayChannelSamples(userId: string, dayId: string): Promise<Map<string, Uint8Array>> {
+  const rows = await db
+    .select({ id: papChannel.id, samples: papChannel.samples })
+    .from(papChannel)
+    .where(and(eq(papChannel.dayId, dayId), eq(papChannel.userId, userId)))
+
+  return new Map(rows.map((row) => [row.id, new Uint8Array(row.samples)]))
+}
+
+export interface ExportedDay extends DayIndexEntry {
+  summary: DaySummary | null
+  settings: DaySettings | null
+  sessionBounds: SessionBounds[]
+  events: { type: PapEventType; startMs: number; durationMs: number }[]
+}
+
+export async function listDaysForExport(userId: string): Promise<ExportedDay[]> {
+  const days = await db.select().from(papDay).where(eq(papDay.userId, userId)).orderBy(asc(papDay.date))
+
+  if (days.length === 0) return []
+
+  const events = await db
+    .select({ dayId: papEvent.dayId, type: papEvent.type, startMs: papEvent.startMs, durationMs: papEvent.durationMs })
+    .from(papEvent)
+    .where(eq(papEvent.userId, userId))
+    .orderBy(asc(papEvent.startMs))
+
+  const byDay = new Map<string, { type: PapEventType; startMs: number; durationMs: number }[]>()
+  for (const { dayId, ...event } of events) {
+    const bucket = byDay.get(dayId)
+    if (bucket) bucket.push(event)
+    else byDay.set(dayId, [event])
+  }
+
+  return days.map((day) => ({
+    date: day.date,
+    startMs: day.startMs,
+    endMs: day.endMs,
+    usageMinutes: day.usageMinutes,
+    ahi: day.ahi,
+    oai: day.oai,
+    cai: day.cai,
+    hi: day.hi,
+    reraIndex: day.reraIndex,
+    leakP95: day.leakP95,
+    pressureP95: day.pressureP95,
+    sessionCount: day.sessionBounds.length,
+    summary: day.summary,
+    settings: day.settings,
+    sessionBounds: day.sessionBounds,
+    events: byDay.get(day.id) ?? [],
+  }))
+}
+
+export interface ExportedImport {
+  id: string
+  brand: CardBrand | null
+  device: DeviceInfo | null
+  settingGroups: SettingGroup[]
+  fileCount: number
+  committedAt: Date | null
+  createdAt: Date
+}
+
+export async function listImportsForExport(userId: string): Promise<ExportedImport[]> {
+  return db
+    .select({
+      id: papImport.id,
+      brand: papImport.brand,
+      device: papImport.device,
+      settingGroups: papImport.settingGroups,
+      fileCount: papImport.fileCount,
+      committedAt: papImport.committedAt,
+      createdAt: papImport.createdAt,
+    })
+    .from(papImport)
+    .where(eq(papImport.userId, userId))
+    .orderBy(asc(papImport.createdAt))
+}
+
+export async function deleteAllTherapyData(userId: string): Promise<number> {
+  const removed = await db.delete(papImport).where(eq(papImport.userId, userId)).returning({ id: papImport.id })
+
+  return removed.length
+}
+
+export async function getProfile(userId: string): Promise<PatientProfile | null> {
+  const [row] = await db
+    .select({
+      bornOn: patientProfile.bornOn,
+      heightCm: patientProfile.heightCm,
+      weightKg: patientProfile.weightKg,
+      diagnosedOn: patientProfile.diagnosedOn,
+      diagnosisAhi: patientProfile.diagnosisAhi,
+      deviceGuide: patientProfile.deviceGuide,
+    })
+    .from(patientProfile)
+    .where(eq(patientProfile.userId, userId))
+
+  return row ?? null
+}
+
+export async function saveProfile(userId: string, input: PatientProfile): Promise<void> {
+  await db
+    .insert(patientProfile)
+    .values({ userId, ...input })
+    .onConflictDoUpdate({ target: patientProfile.userId, set: input })
+}

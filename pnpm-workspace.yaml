@@ -1,0 +1,11 @@
+overrides:
+  pg-protocol: 1.15.0
+  tsx: 4.23.11
+
+allowBuilds:
+  '@parcel/watcher': false
+  '@swc/core': false
+  core-js: false
+  esbuild: false
+  sharp: false
+  unrs-resolver: false

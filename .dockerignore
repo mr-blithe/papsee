@@ -1,0 +1,16 @@
+.git
+.github
+.claude
+.next
+.vercel
+node_modules
+coverage
+*.tsbuildinfo
+
+.env
+.env.*
+!.env.example
+
+Dockerfile
+.dockerignore
+compose.yaml

@@ -1,0 +1,54 @@
+name: Device report
+description: Tell us how an import went with your machine, whether it worked or not.
+title: 'Device: '
+labels: [device]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is the most useful report you can file. PapSee has been verified against one real card, a ResMed
+        AirSense 11 AutoSet, so every other machine is running on code that has never met the real thing.
+
+        **Do not attach therapy data.** No card, no EDF file, no export, no screenshot of your own panel. A card
+        identifies a person and describes their treatment. Describe what you saw instead, and if a bug genuinely
+        needs real bytes we will work out how to reproduce it without publishing yours.
+
+  - type: input
+    id: device
+    attributes:
+      label: Machine
+      description: Brand, model and mode as the machine reports them.
+      placeholder: ResMed AirSense 10 AutoSet
+    validations:
+      required: true
+
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: What happened
+      options:
+        - The import worked and the numbers look right
+        - The import worked but something looks wrong
+        - The import failed or was refused
+        - The app said this device is not supported yet
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: Detail
+      description: >
+        If something looked wrong, which screen and which number, and what you expected instead. Comparing against
+        OSCAR or against the manufacturer's own app is useful, so say what those showed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Where you were running it
+      description: Hosted instance or self hosted, plus browser and operating system.
+      placeholder: Self hosted with Docker, Firefox on Android
+    validations:
+      required: false

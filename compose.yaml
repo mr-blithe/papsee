@@ -1,0 +1,66 @@
+name: papsee
+
+x-database-url: &database-url postgres://${POSTGRES_USER:-papsee}:${POSTGRES_PASSWORD:-papsee}@postgres:5432/${POSTGRES_DB:-papsee}
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-papsee}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-papsee}
+      POSTGRES_DB: ${POSTGRES_DB:-papsee}
+    volumes:
+      # Postgres 18 moved its data directory. Mounting 17's /var/lib/postgresql/data here looks like
+      # it works and loses every write the next time the container is recreated.
+      - postgres-data:/var/lib/postgresql
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-papsee} -d ${POSTGRES_DB:-papsee}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    environment:
+      DATABASE_URL: *database-url
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      target: runtime
+      args:
+        NEXT_PUBLIC_SOURCE_URL: ${NEXT_PUBLIC_SOURCE_URL:-}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY:-}
+        NEXT_PUBLIC_POSTHOG_ENABLED: ${NEXT_PUBLIC_POSTHOG_ENABLED:-false}
+        NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN: ${NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN:-}
+        NEXT_PUBLIC_POSTHOG_HOST: ${NEXT_PUBLIC_POSTHOG_HOST:-}
+        NEXT_PUBLIC_POSTHOG_UI_HOST: ${NEXT_PUBLIC_POSTHOG_UI_HOST:-}
+    restart: unless-stopped
+    # Optional so that a contributor who keeps their configuration in .env.local and only ever runs
+    # `docker compose up -d postgres` is not blocked: a required env_file that is missing fails the
+    # whole file, not just the service that names it.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Overrides whatever .env says, because the database is a compose service rather than
+      # localhost once the app is inside the network.
+      DATABASE_URL: *database-url
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-data:

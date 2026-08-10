@@ -1,0 +1,1 @@
+ALTER TABLE "patient_profile" ADD COLUMN "born_on" text;

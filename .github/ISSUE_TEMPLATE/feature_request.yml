@@ -1,0 +1,29 @@
+name: Feature request
+description: Something PapSee should do and does not.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to understand about your therapy
+      description: >
+        Describe the problem rather than the solution. What question about your own nights can you not answer at the
+        moment?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: Optional. If OSCAR or another tool already does this, say how it presents it.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Before you file
+      options:
+        - label: This does not ask PapSee to interpret data, recommend a setting or suggest a diagnosis.
+          required: true

@@ -1,0 +1,8 @@
+.claude
+.next
+drizzle
+pnpm-lock.yaml
+
+src/app/globals.css
+src/components/ui
+src/lib/db/schema.ts

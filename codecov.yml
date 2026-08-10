@@ -1,0 +1,21 @@
+coverage:
+  status:
+    project:
+      default:
+        target: 50%
+      pap:
+        paths:
+          - src/lib/pap/
+        target: 70%
+    patch:
+      default:
+        target: 80%
+
+ignore:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - 'public/**'
+  - '*.config.*'
+  - '*.d.ts'
+  - '**/*.d.ts'
+  - '**/*.json'

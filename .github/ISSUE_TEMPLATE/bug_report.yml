@@ -1,0 +1,56 @@
+name: Bug report
+description: Something in the app does not work, or shows the wrong thing.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not attach therapy data.** No card, no EDF file, no export, no screenshot of your own panel. If a
+        screenshot is the only way to explain it, use the example patient, which you can open without an account.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what happened, and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the example patient
+        2. Go to Therapy
+        3. Drag to zoom on the flow chart
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and operating system
+      placeholder: Safari 26 on iOS 26
+    validations:
+      required: true
+
+  - type: dropdown
+    id: instance
+    attributes:
+      label: Which instance
+      options:
+        - The hosted instance
+        - Self hosted
+        - A local development checkout
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console or server output
+      description: Anything the browser console or the server logged. Check it for personal data before pasting.
+      render: text
+    validations:
+      required: false
