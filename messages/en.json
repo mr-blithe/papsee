@@ -20,7 +20,7 @@
     "createAccount": "Create your account",
     "proofDetail": "Access from any device",
     "proofTrends": "Changes over time",
-    "proofContext": "History tied to your account",
+    "proofContext": "Free and open source",
     "previewLabel": "Example PapSee overview",
     "whyEyebrow": "Your history goes with you",
     "whyTitle": "Your therapy history should not be tied to one computer or an SD card.",
@@ -61,7 +61,7 @@
     "stepReturnBody": "Follow your therapy across weeks and months from any device where you sign in.",
     "coverageEyebrow": "Device coverage",
     "coverageTitle": "Honest about what it can read.",
-    "coverageBody": "PapSee currently supports ResMed AirSense device data. Support for other PAP devices and Apple Health sync is coming soon.",
+    "coverageBody": "PapSee reads ResMed cards today. It is verified against a real AirSense 11 card, and the AirSense 10, AirCurve and S9 formats are implemented and tested against synthetic cards. Other brands are recognised by name so an unreadable card is never mistaken for an empty night.",
     "sourceEyebrow": "Open source",
     "sourceTitle": "Read the code, or self host it on your own computer.",
     "sourceBody": "PapSee is free software under the AGPL. You can read exactly what happens to a night you import, report a number that looks wrong, or self host the whole thing so your therapy data never leaves a computer you control.",
@@ -70,7 +70,8 @@
     "closingBody": "Keep the detail your PAP device recorded in one place and follow what changes over time.",
     "disclaimer": "PapSee shows what your PAP device recorded. It does not provide a diagnosis or medical advice.",
     "nightsTitle": "Every night in range",
-    "nightsDescription": "Hours slept and AHI, newest first."
+    "nightsDescription": "Hours slept and AHI, newest first.",
+    "coverageRecognised": "Recognised, not read yet: {brands}."
   },
   "Nav": {
     "therapy": "Daily therapy data",
@@ -409,7 +410,9 @@
     "resmedAirSense10": "ResMed AirSense 10",
     "resmedAirCurve": "ResMed AirCurve 10 or 11",
     "resmedS9": "ResMed S9",
-    "other": "Another device"
+    "other": "Another device",
+    "coverageVerified": "Verified",
+    "coverageRead": "Supported"
   },
   "ApiErrors": {
     "invalidRequest": "That did not come through in a form the server could read. Try again.",
@@ -418,6 +421,7 @@
     "notFound": "That night is not here any more.",
     "payloadTooLarge": "One file on the card is too large to send in one piece.",
     "unsupportedCard": "No readable therapy data was found on that card.",
+    "emptyCard": "That card was read, but it holds no nights of therapy yet.",
     "unknown": "Something went wrong. Try again."
   },
   "Demo": {
@@ -468,12 +472,17 @@
     "failedTitle": "That did not go through",
     "supportTitle": "What can be read",
     "supportDescription": "Current device support.",
-    "supportedDevices": "ResMed AirSense devices are supported. Support for other devices is coming soon.",
+    "supportedDevices": "ResMed cards are read. Everything else is recognised by name, so PapSee tells you it cannot read a card instead of showing you an empty night.",
     "changeDevice": "Change your device",
     "committing": "Preparing your nights",
     "committingProgress": "Preparing your nights, {committed} of {total}",
     "stayCaution": "Keep this tab open and stay on this page. Leaving before it finishes cancels the import and you would have to start again.",
-    "heldBack": "You cannot leave this page while the import is running."
+    "heldBack": "You cannot leave this page while the import is running.",
+    "coverageVerified": "Verified against a real card",
+    "coverageRead": "Read, not yet checked against a real card",
+    "coverageRecognised": "Recognised, not read yet",
+    "coverageVerifiedDevices": "ResMed AirSense 11",
+    "coverageReadDevices": "ResMed AirSense 10, AirCurve 10 and 11, S9"
   },
   "Overview": {
     "title": "Overview",
@@ -615,6 +624,7 @@
     "contactTitle": "Contact",
     "contactIntro": "Reach us about your account, your data, or something that looks wrong.",
     "sourceTitle": "Source code",
+    "version": "v{version}",
     "pending": "This page is still being written. It will be published before PapSee leaves beta."
   }
 }

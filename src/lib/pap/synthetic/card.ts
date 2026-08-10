@@ -36,6 +36,8 @@ const EVENT_LABELS: Record<PapEventType, string> = {
   periodicBreathing: 'CSR Start',
 }
 
+const PERIODIC_BREATHING_END_LABEL = 'CSR End'
+
 interface WaveformSpec {
   spec: EdfSignalSpec
   channel: ChannelId
@@ -121,6 +123,8 @@ function annotationFile(
   types: PapEventType[],
 ): PapFile {
   const at = stamp(session.startMs)
+  const onsetOf = (atMs: number) => Math.round((atMs - session.startMs) / 100) / 10
+
   const talTable: EdfAnnotationTal[] = night.events
     .filter(
       (event) =>
@@ -128,11 +132,20 @@ function annotationFile(
         event.startMs >= session.startMs &&
         event.startMs < session.startMs + session.durationMs,
     )
-    .map((event) => ({
-      onset: Math.round((event.startMs - session.startMs) / 100) / 10,
-      duration: Math.round(event.durationMs / 100) / 10,
-      text: EVENT_LABELS[event.type],
-    }))
+    .flatMap((event) =>
+      event.type === 'periodicBreathing'
+        ? [
+            { onset: onsetOf(event.startMs), text: EVENT_LABELS[event.type] },
+            { onset: onsetOf(event.startMs + event.durationMs), text: PERIODIC_BREATHING_END_LABEL },
+          ]
+        : [
+            {
+              onset: onsetOf(event.startMs),
+              duration: Math.round(event.durationMs / 100) / 10,
+              text: EVENT_LABELS[event.type],
+            },
+          ],
+    )
 
   const perRecord = 6
   const records: EdfRecordBlock[][] = []
@@ -331,7 +344,7 @@ function strRecord(night: SyntheticNight, signals: EdfSignalSpec[], used: boolea
     return session ? Math.round((session.startMs + session.durationMs - night.noonMs) / 60_000) : NO_DATA
   })
 
-  const values: Record<string, number> = !used
+  const values: Record<string, number | null> = !used
     ? {}
     : {
         Duration: summary.usageMinutes,

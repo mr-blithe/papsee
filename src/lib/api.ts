@@ -5,6 +5,7 @@ const STATUS_BY_CODE = {
   notFound: 404,
   payloadTooLarge: 413,
   unsupportedCard: 422,
+  emptyCard: 422,
 } as const
 
 export type ApiErrorCode = keyof typeof STATUS_BY_CODE

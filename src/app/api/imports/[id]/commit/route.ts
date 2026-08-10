@@ -19,6 +19,7 @@ export async function POST(request: Request, context: RouteContext<'/api/imports
   const result = await advanceCommit(panel.userId, id, COMMIT_BUDGET_MS)
 
   if (result.status === 'notFound') return apiError('notFound')
+  if (result.status === 'empty') return apiError('emptyCard')
   if (result.status === 'unsupported') return apiError('unsupportedCard', { brand: result.brand })
 
   return Response.json({

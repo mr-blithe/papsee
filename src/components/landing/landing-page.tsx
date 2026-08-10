@@ -5,6 +5,7 @@ import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
+import { BRAND_NAMES, RECOGNISED_BRANDS } from '@/lib/pap'
 import { SOURCE_URL } from '@/lib/site-url'
 import { cn } from '@/lib/utils'
 import { StaticSignalPreview, TherapyPreview } from './therapy-preview'
@@ -214,6 +215,9 @@ export function LandingPage() {
               </div>
               <div>
                 <p className="text-sm leading-6 text-muted-foreground">{t('coverageBody')}</p>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {t('coverageRecognised', { brands: RECOGNISED_BRANDS.map((brand) => BRAND_NAMES[brand]).join(', ') })}
+                </p>
               </div>
             </div>
           </div>

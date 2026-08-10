@@ -97,8 +97,8 @@ describe('the summary a synthetic night reports about itself', () => {
   })
 
   it('truncates its indices to a tenth the way the device does, rather than rounding', () => {
-    expect(night.summary.ahi).toBe(truncateToTenth(night.summary.ahi))
-    expect(night.summary.reraIndex).toBe(truncateToTenth(night.summary.reraIndex))
+    expect(night.summary.ahi).toBe(truncateToTenth(night.summary.ahi!))
+    expect(night.summary.reraIndex).toBe(truncateToTenth(night.summary.reraIndex!))
   })
 
   it('counts one mask event per session, which is what the device reports', () => {
@@ -106,8 +106,8 @@ describe('the summary a synthetic night reports about itself', () => {
   })
 
   it('reports leak statistics in the order the reader expects them', () => {
-    expect(night.summary.leak.median).toBeLessThanOrEqual(night.summary.leak.percentile95)
-    expect(night.summary.leak.percentile95).toBeLessThanOrEqual(night.summary.leak.max)
+    expect(night.summary.leak.median!).toBeLessThanOrEqual(night.summary.leak.percentile95!)
+    expect(night.summary.leak.percentile95!).toBeLessThanOrEqual(night.summary.leak.max!)
   })
 })
 
@@ -199,23 +199,23 @@ describe('a month of synthetic nights', () => {
   })
 
   it('includes at least one night short enough to read as poor usage, so the overview has something to show', () => {
-    expect(nights.some((night) => night.summary.usageMinutes < 4 * 60)).toBe(true)
+    expect(nights.some((night) => night.summary.usageMinutes! < 4 * 60)).toBe(true)
   })
 
   it('varies tidal volume from night to night, rather than converging on one number every night', () => {
-    const medians = nights.map((night) => Math.round(night.summary.tidalVolume.median))
+    const medians = nights.map((night) => Math.round(night.summary.tidalVolume.median!))
 
     expect(new Set(medians).size).toBeGreaterThan(12)
   })
 
   it('varies the respiratory rate a patient breathes at from night to night', () => {
-    const medians = nights.map((night) => Math.round(night.summary.respiratoryRate.median * 10))
+    const medians = nights.map((night) => Math.round(night.summary.respiratoryRate.median! * 10))
 
     expect(new Set(medians).size).toBeGreaterThan(12)
   })
 
   it('keeps the mask sealed on most nights, so a large leak still reads as the exception', () => {
-    const leaking = nights.filter((night) => night.summary.leak.percentile95 >= LARGE_LEAK_THRESHOLD)
+    const leaking = nights.filter((night) => night.summary.leak.percentile95! >= LARGE_LEAK_THRESHOLD)
 
     expect(leaking.length).toBeGreaterThan(0)
     expect(leaking.length).toBeLessThan(nights.length / 3)
@@ -240,7 +240,7 @@ describe('a month of synthetic nights', () => {
   })
 
   it('spans more than one severity band across the month', () => {
-    const bands = new Set(nights.map((night) => (night.summary.ahi < 5 ? 'normal' : 'raised')))
+    const bands = new Set(nights.map((night) => (night.summary.ahi! < 5 ? 'normal' : 'raised')))
 
     expect(bands.size).toBe(2)
   })

@@ -31,8 +31,59 @@ describe('naming a card we cannot read', () => {
     expect(detectCard(['WM_DATA.TDF'])).toBe('lowenstein')
     expect(detectCard(['SL/SET1'])).toBe('devilbiss')
     expect(detectCard(['DV6/SET.BIN'])).toBe('devilbiss')
-    expect(detectCard(['THERAPY/CONFIG/x.dat'])).toBe('resvent')
-    expect(detectCard(['20260808.usr'])).toBe('bmc')
+    expect(detectCard(['THERAPY/CONFIG/x.dat', 'THERAPY/RECORD/202608/08/1.dat'])).toBe('resvent')
+    expect(detectCard(['20260808.usr', '20260808.idx', '20260808.000'])).toBe('bmc')
+  })
+
+  it('names a Philips card through the properties file of either DreamStation generation', () => {
+    expect(detectCard(['P-SERIES/P1234567/PROP1.TXT'])).toBe('philips')
+    expect(detectCard(['P-SERIES/P1234567/PROP.BIN'])).toBe('philips')
+  })
+
+  it('names a vREM card, which OSCAR knows by the two text files beside its therapy data', () => {
+    expect(detectCard(['VREM/PI.txt', 'VREM/DI.txt', 'VREM/20260808.dat'])).toBe('vrem')
+    expect(detectCard(['vrem001/di.txt', 'vrem001/pi.txt'])).toBe('vrem')
+  })
+
+  it('names a Yuwell card through the extension all four of its layouts share', () => {
+    expect(detectCard(['RunLog.bys', 'YH550-1234/0100001.BYS'])).toBe('yuwell')
+    expect(detectCard(['YHSD-NEW.BYS'])).toBe('yuwell')
+    expect(detectCard(['YH830-1234/0100001.BYS'])).toBe('yuwell')
+  })
+
+  it('names the BMC G3 X series, which writes no .usr file at all', () => {
+    expect(detectCard(['20260808.idx', '20260808.000'])).toBe('bmc')
+  })
+})
+
+describe('signatures loose enough to name the wrong brand', () => {
+  it('does not call any folder named therapy a Resvent card', () => {
+    expect(detectCard(['therapy/notes.txt'])).toBeNull()
+    expect(detectCard(['THERAPY/CONFIG/x.dat'])).toBeNull()
+  })
+
+  it('does not call a lone index file a BMC card, because OSCAR wants the whole set', () => {
+    expect(detectCard(['20260808.usr'])).toBeNull()
+    expect(detectCard(['20260808.idx'])).toBeNull()
+  })
+
+  it('wants a BMC index and data file that belong to each other', () => {
+    expect(detectCard(['20260808.idx', '20260809.000'])).toBeNull()
+  })
+
+  it('does not call a stray settings file a DeVilbiss card', () => {
+    expect(detectCard(['SET1'])).toBeNull()
+    expect(detectCard(['backup/SET.BIN'])).toBeNull()
+  })
+
+  it('wants both text files before it calls a folder a vREM card', () => {
+    expect(detectCard(['VREM/PI.txt'])).toBeNull()
+    expect(detectCard(['notes/PI.txt', 'notes/DI.txt'])).toBeNull()
+  })
+
+  it('does not read every document beginning with prop as a Philips properties file', () => {
+    expect(detectCard(['proposal.txt'])).toBeNull()
+    expect(detectCard(['properties.txt'])).toBeNull()
   })
 })
 

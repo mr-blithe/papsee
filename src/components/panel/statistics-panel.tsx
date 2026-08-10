@@ -6,6 +6,12 @@ import type { TermId } from '@/lib/terms'
 import { PanelCard, PanelCardHeader } from './panel-card'
 import { TermHint } from './term-hint'
 
+const NOT_RECORDED = '-'
+
+function reading(value: number | null, decimals: number): string {
+  return value === null ? NOT_RECORDED : value.toFixed(decimals)
+}
+
 interface Row {
   key: TermId
   channel?: ChannelId
@@ -70,9 +76,9 @@ export function StatisticsCard({ summary }: { summary: DaySummary | null }) {
                   </span>
                   <span className="text-muted-foreground">{row.unit}</span>
                 </td>
-                <td className="px-2 py-2 text-right">{row.stat.median.toFixed(row.decimals)}</td>
-                <td className="px-2 py-2 text-right">{row.stat.percentile95.toFixed(row.decimals)}</td>
-                <td className="px-4 py-2 text-right">{row.stat.max.toFixed(row.decimals)}</td>
+                <td className="px-2 py-2 text-right">{reading(row.stat.median, row.decimals)}</td>
+                <td className="px-2 py-2 text-right">{reading(row.stat.percentile95, row.decimals)}</td>
+                <td className="px-4 py-2 text-right">{reading(row.stat.max, row.decimals)}</td>
               </tr>
             ))}
           </tbody>
@@ -88,10 +94,10 @@ export function EnvironmentCard({ summary }: { summary: DaySummary | null }) {
   if (!summary) return null
 
   const readings = [
-    { key: 'ambientHumidity', value: summary.ambientHumidity.toFixed(1), unit: 'mg/L' },
-    { key: 'humidifierTemperature', value: summary.humidifierTemperature.toFixed(1), unit: '°C' },
-    { key: 'periodicBreathing', value: summary.csrMinutes.toFixed(0), unit: t('minutes') },
-    { key: 'maskEvents', value: summary.maskEvents.toFixed(0), unit: undefined },
+    { key: 'ambientHumidity', value: reading(summary.ambientHumidity, 1), unit: 'mg/L' },
+    { key: 'humidifierTemperature', value: reading(summary.humidifierTemperature, 1), unit: '°C' },
+    { key: 'periodicBreathing', value: reading(summary.csrMinutes, 0), unit: t('minutes') },
+    { key: 'maskEvents', value: reading(summary.maskEvents, 0), unit: undefined },
   ] as const
 
   return (

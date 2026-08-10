@@ -4,7 +4,7 @@ import { readAnnotations } from '../edf/annotations'
 import { applyScaling, isAllNoData, readDigitalBytes, signalScaling } from '../edf/signals'
 import type { DigitalChannel, DigitalSession } from '../digital'
 import type { PapEvent, PapFile } from '../types'
-import { lookupChannel, lookupEventType } from './channels'
+import { isPeriodicBreathingEnd, lookupChannel, lookupEventType } from './channels'
 
 const FILENAME = /^(\d{8})_(\d{6})_([A-Z0-9]+)\.edf$/i
 
@@ -66,15 +66,23 @@ function readChannels(file: PapFile, startMs: number): { channels: DigitalChanne
 function readEvents(file: PapFile, startMs: number): PapEvent[] {
   const edf = parseEdf(file.data)
   const events: PapEvent[] = []
+  let openPeriodicBreathing: PapEvent | null = null
 
   for (const annotation of readAnnotations(edf)) {
+    const atMs = startMs + annotation.onset * 1000
+
+    if (isPeriodicBreathingEnd(annotation.text)) {
+      if (openPeriodicBreathing) openPeriodicBreathing.durationMs = atMs - openPeriodicBreathing.startMs
+      openPeriodicBreathing = null
+      continue
+    }
+
     const type = lookupEventType(annotation.text)
     if (!type) continue
-    events.push({
-      type,
-      startMs: startMs + annotation.onset * 1000,
-      durationMs: annotation.duration * 1000,
-    })
+
+    const event: PapEvent = { type, startMs: atMs, durationMs: annotation.duration * 1000 }
+    events.push(event)
+    if (type === 'periodicBreathing') openPeriodicBreathing = event
   }
 
   return events

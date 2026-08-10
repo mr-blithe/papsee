@@ -1,5 +1,10 @@
 name: papsee
 
+# Both application services build from this checkout on purpose. A release also publishes them as
+# ghcr.io/mr-blithe/papsee and ghcr.io/mr-blithe/papsee-migrate, and running those instead means
+# giving each service an image: rather than a build:. Compose pulls in preference to building
+# whenever a service carries both, so the two cannot simply sit side by side.
+
 x-database-url: &database-url postgres://${POSTGRES_USER:-papsee}:${POSTGRES_PASSWORD:-papsee}@postgres:5432/${POSTGRES_DB:-papsee}
 
 services:

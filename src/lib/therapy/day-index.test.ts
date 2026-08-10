@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { importPapData } from '@/lib/pap'
+import { allEvents, eventIndices, importPapData, truncateToTenth } from '@/lib/pap'
 import { writeSyntheticCard } from '@/lib/pap/synthetic/card'
 import type { PapDay, PapEvent, PapSession } from '@/lib/pap'
 import { toDayIndexRow } from './day-index'
@@ -75,6 +75,20 @@ describe('stored day index', () => {
     expect(row.usageMinutes).toBe(180)
     expect(row.leakP95).toBeNull()
     expect(row.pressureP95).toBeNull()
+  })
+
+  it('derives the one index a card left out, while keeping the ones it reported', () => {
+    const card = writeSyntheticCard({ seed: 'index', dates: ['2026-08-08'] })
+    const parsed = importPapData(card).days[0]
+    const day: PapDay = { ...parsed, summary: { ...parsed.summary!, reraIndex: null } }
+
+    const row = toDayIndexRow(day)
+
+    expect(row.ahi).toBe(parsed.summary?.ahi)
+    expect(row.reraIndex).not.toBeNull()
+    expect(row.reraIndex).toBe(
+      truncateToTenth(eventIndices(allEvents(day.sessions), row.usageMinutes * 60_000).reraIndex),
+    )
   })
 
   it('leaves periodic breathing out of a derived index', () => {

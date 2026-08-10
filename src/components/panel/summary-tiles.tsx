@@ -14,6 +14,8 @@ import {
 import type { AhiSeverity } from '@/lib/pap/severity'
 import type { TermId } from '@/lib/terms'
 import { cn } from '@/lib/utils'
+
+const NOT_RECORDED = '-'
 import { PanelCard } from './panel-card'
 import { TermHint } from './term-hint'
 
@@ -89,17 +91,17 @@ export function SummaryTiles({ day, severity }: { day: PapDay; severity: AhiSeve
   const t = useTranslations('Summary')
   const { summary, settings } = day
   const recordedMs = sessionDurationMs(day.sessions)
-  const usageMs = summary ? summary.usageMinutes * 60_000 : recordedMs
+  const usageMs = summary?.usageMinutes != null ? summary.usageMinutes * 60_000 : recordedMs
   const computed = eventIndices(allEvents(day.sessions), usageMs)
 
-  const ahi = summary ? summary.ahi : truncateToTenth(computed.ahi)
+  const ahi = summary?.ahi ?? truncateToTenth(computed.ahi)
   const leakAverage = channelAverage(day.sessions, 'leak')
   const hasRange = settings?.minPressure !== null && settings?.maxPressure !== null
   const pressureValue = settings?.setPressure
     ? settings.setPressure.toFixed(1)
     : hasRange && settings
       ? `${settings.minPressure?.toFixed(1)} - ${settings.maxPressure?.toFixed(1)}`
-      : '-'
+      : NOT_RECORDED
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -126,21 +128,13 @@ export function SummaryTiles({ day, severity }: { day: PapDay; severity: AhiSeve
         detail={
           <StatLine
             items={[
-              {
-                label: t('oai'),
-                term: 'oai',
-                value: (summary ? summary.oai : truncateToTenth(computed.oai)).toFixed(1),
-              },
-              {
-                label: t('cai'),
-                term: 'cai',
-                value: (summary ? summary.cai : truncateToTenth(computed.cai)).toFixed(1),
-              },
-              { label: t('hi'), term: 'hi', value: (summary ? summary.hi : truncateToTenth(computed.hi)).toFixed(1) },
+              { label: t('oai'), term: 'oai', value: (summary?.oai ?? truncateToTenth(computed.oai)).toFixed(1) },
+              { label: t('cai'), term: 'cai', value: (summary?.cai ?? truncateToTenth(computed.cai)).toFixed(1) },
+              { label: t('hi'), term: 'hi', value: (summary?.hi ?? truncateToTenth(computed.hi)).toFixed(1) },
               {
                 label: t('rera'),
                 term: 'rera',
-                value: (summary ? summary.reraIndex : truncateToTenth(computed.reraIndex)).toFixed(1),
+                value: (summary?.reraIndex ?? truncateToTenth(computed.reraIndex)).toFixed(1),
               },
             ]}
           />
@@ -150,10 +144,10 @@ export function SummaryTiles({ day, severity }: { day: PapDay; severity: AhiSeve
         term="epr"
         label={settings?.mode ?? t('therapy')}
         value={pressureValue}
-        unit={pressureValue === '-' ? undefined : 'cmH2O'}
+        unit={pressureValue === NOT_RECORDED ? undefined : 'cmH2O'}
         detail={
           settings ? (
-            settings.eprType === 'Off' ? (
+            settings.eprType === 'Off' || settings.eprLevel === null ? (
               t('eprOff')
             ) : (
               <span className="inline-flex items-center gap-1">
@@ -167,7 +161,7 @@ export function SummaryTiles({ day, severity }: { day: PapDay; severity: AhiSeve
       <Tile
         term="leak"
         label={t('leak')}
-        value={leakAverage === null ? '-' : leakAverage.toFixed(1)}
+        value={leakAverage === null ? NOT_RECORDED : leakAverage.toFixed(1)}
         unit={t('leakUnit')}
         detail={
           <StatLine
@@ -175,9 +169,9 @@ export function SummaryTiles({ day, severity }: { day: PapDay; severity: AhiSeve
               {
                 label: t('percentile95'),
                 term: 'percentile95',
-                value: summary ? summary.leak.percentile95.toFixed(1) : '-',
+                value: summary?.leak.percentile95?.toFixed(1) ?? NOT_RECORDED,
               },
-              { label: t('max'), value: summary ? summary.leak.max.toFixed(1) : '-' },
+              { label: t('max'), value: summary?.leak.max?.toFixed(1) ?? NOT_RECORDED },
             ]}
           />
         }

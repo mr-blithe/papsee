@@ -1,0 +1,93 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  publish:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Refuse a tag that disagrees with package.json
+        run: |
+          declared="v$(node -p 'require("./package.json").version')"
+          if [ "$GITHUB_REF_NAME" != "$declared" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json, which says $declared." >&2
+            exit 1
+          fi
+
+      # arm64 is emulated here, which is slow but spends ordinary x64 runner minutes. Once the
+      # repository is public, ubuntu-24.04-arm runners are free, and splitting the two platforms
+      # across native runners is the faster shape.
+      - uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: app-meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302
+        with:
+          images: ghcr.io/${{ github.repository }}
+          # latest is spelled out rather than left to the action's auto flavour, and it is withheld
+          # from a tag carrying a hyphen: v1.0.0-rc.1 is a release candidate, and moving latest onto
+          # one would hand it to everyone who did not pin a version.
+          flavor: latest=false
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        with:
+          context: .
+          target: runtime
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.app-meta.outputs.tags }}
+          labels: ${{ steps.app-meta.outputs.labels }}
+          # A published image freezes every NEXT_PUBLIC_* value it was built with. The source offer
+          # is the one that has to be right; the rest are left empty on purpose, which is what keeps
+          # analytics off and leaves the sign up challenge out of a stranger's instance.
+          build-args: |
+            NEXT_PUBLIC_SOURCE_URL=https://github.com/${{ github.repository }}
+
+      # Drizzle Kit and tsx are devDependencies, so the runtime image cannot migrate. Whoever runs
+      # the app image needs this one to bring a database up to the same version first.
+      - id: migrate-meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302
+        with:
+          images: ghcr.io/${{ github.repository }}-migrate
+          flavor: latest=false
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a
+        with:
+          context: .
+          target: migrate
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.migrate-meta.outputs.tags }}
+          labels: ${{ steps.migrate-meta.outputs.labels }}
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes

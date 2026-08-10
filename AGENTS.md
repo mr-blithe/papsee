@@ -391,11 +391,6 @@ time fails the suite instead of passing on a machine that sits close enough to U
 Better Auth over Drizzle over Postgres, email and password plus Google. Local development runs against a Postgres 17
 of your own on 5432, named by `DATABASE_URL`.
 
-- **The build never needs a database.** `next build` imports every route module to collect page data, so a client
-  built at module scope turns `DATABASE_URL` into a requirement of the build itself, on Vercel, in CI and in the
-  Docker image alike, and a host that only sets it at runtime fails with a stack trace pointing at an API route.
-  `src/lib/db/index.ts` therefore hands out a proxy and connects on first use. Keep it that way, and keep the missing
-  variable an error a request reports rather than one a build does.
 - **Two schema files, one client.** `src/lib/db/schema.ts` belongs to the Better Auth CLI. Everything PapSee owns lives
   in `src/lib/db/pap-schema.ts`, which imports `user` for its foreign keys, and `src/lib/db/index.ts` composes both.
   `drizzle.config.ts` lists both paths, so a table added to only one of them silently never reaches a migration.
@@ -461,11 +456,19 @@ changes that.
 The hosted instance is not the only deployment any more. `Dockerfile` and `compose.yaml` are a supported path and
 the README documents them, so a change that only works on Vercel is a broken change.
 
-- **The image is a `output: 'standalone'` build.** `next.config.ts` sets it, the runtime stage copies
-  `.next/standalone` and `.next/static` and nothing else, and no `node_modules` is installed there. Anything read
-  from disk at runtime that the tracer cannot see will be missing from the image and present everywhere else.
+- **The image is a `output: 'standalone'` build.** `next.config.ts` sets it everywhere except on Vercel, the runtime
+  stage copies `.next/standalone` and `.next/static` and nothing else, and no `node_modules` is installed there.
+  Anything read from disk at runtime that the tracer cannot see will be missing from the image and present everywhere
+  else. Vercel is excluded because it packages the build itself and because asking for standalone there fails the
+  deploy outright, on an open Next.js bug the config links to: keep that condition until the bug is closed.
 - **Migrating and seeding happen from the `migrate` stage, not the runtime one.** Drizzle Kit and tsx are
   devDependencies. `compose.yaml` runs that stage to completion before the app starts.
+- **A release publishes both stages, and they are one unit.** `.github/workflows/release.yml` fires on a `v*` tag,
+  refuses one that disagrees with `package.json`, and pushes `ghcr.io/mr-blithe/papsee` and
+  `ghcr.io/mr-blithe/papsee-migrate` under the same tags. Publishing the app image alone would ship something nobody
+  can migrate a database with, so a change to either stage has to keep both buildable. The app image also freezes
+  every `NEXT_PUBLIC_*` it was built with, which is why the workflow passes only the source offer and leaves the rest
+  empty: anything added there is baked into what strangers run.
 - **`SITE_DOMAIN` names the host, without a scheme.** `getSiteUrl()` prefers it over `VERCEL_PROJECT_PRODUCTION_URL`,
   which is how an image built by a stranger learns where it is served from. Vercel keeps working untouched because
   the variable is simply unset there.

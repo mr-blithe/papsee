@@ -37,7 +37,9 @@ const EVENTS: { type: PapEventType; labels: string[] }[] = [
   { type: 'periodicBreathing', labels: ['CSR Start'] },
 ]
 
-const IGNORED_EVENT_LABELS = ['Recording starts', 'Recording ends', 'CSR End', 'SpO2 Desaturation']
+const PERIODIC_BREATHING_END = ['CSR End']
+
+const IGNORED_EVENT_LABELS = ['Recording starts', 'Recording ends', ...PERIODIC_BREATHING_END, 'SpO2 Desaturation']
 
 function matchLength(labels: string[], label: string): number {
   let best = 0
@@ -69,6 +71,10 @@ export function lookupChannel(label: string): ChannelMapping | null {
 export function lookupEventType(label: string): PapEventType | null {
   if (matchLength(IGNORED_EVENT_LABELS, label) > 0) return null
   return bestMatch(EVENTS, label)?.type ?? null
+}
+
+export function isPeriodicBreathingEnd(label: string): boolean {
+  return matchLength(PERIODIC_BREATHING_END, label) > 0
 }
 
 export const LARGE_LEAK_THRESHOLD = 24

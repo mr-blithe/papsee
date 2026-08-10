@@ -189,6 +189,40 @@ describe('parsing one night at a time instead of the whole card', () => {
   })
 })
 
+describe('a card whose Identification file never made it', () => {
+  const stripped = writeSyntheticCard({ seed: SEED, dates: [DATE], waveforms: false }).filter(
+    (file) => !file.path.startsWith('Identification'),
+  )
+
+  const metadata = readCardMetadata(stripped)
+
+  it('reports the settings as unknown rather than decoding them with the wrong generation of tables', () => {
+    const settings = metadata.daySummaries[0].settings
+
+    expect(settings.maskType).toBe('Unknown')
+    expect(settings.smartStart).toBe('Unknown')
+    expect(settings.climateControl).toBe('Unknown')
+    expect(settings.patientAccess).toBe('Unknown')
+  })
+
+  it('reports no prescribed pressure, because nothing can say which mode selected it', () => {
+    const settings = metadata.daySummaries[0].settings
+
+    expect(settings.setPressure).toBeNull()
+    expect(settings.minPressure).toBeNull()
+    expect(settings.maxPressure).toBeNull()
+  })
+
+  it('says what it could not read, so the night is not quietly presented as understood', () => {
+    expect(metadata.unreadable).toContain('Identification.json')
+  })
+
+  it('still reads the summary figures, which do not depend on the device generation at all', () => {
+    expect(metadata.daySummaries[0].summary.usageMinutes).toBeGreaterThan(0)
+    expect(metadata.daySummaries[0].summary.ahi).not.toBeNull()
+  })
+})
+
 describe('a card covering nights the machine was never switched on', () => {
   const DATES = ['2026-07-14', '2026-07-15', '2026-07-16']
   const SKIPPED = DATES[1]

@@ -110,8 +110,9 @@ export function TherapyScreen({ initialDate }: { initialDate: string | null }) {
 
   const severity = useMemo(() => {
     if (!day) return null
-    const usageMs = day.summary ? day.summary.usageMinutes * 60_000 : sessionDurationMs(day.sessions)
-    const ahi = day.summary ? day.summary.ahi : truncateToTenth(eventIndices(allEvents(day.sessions), usageMs).ahi)
+    const usageMs =
+      day.summary?.usageMinutes != null ? day.summary.usageMinutes * 60_000 : sessionDurationMs(day.sessions)
+    const ahi = day.summary?.ahi ?? truncateToTenth(eventIndices(allEvents(day.sessions), usageMs).ahi)
 
     return ahiSeverity(ahi)
   }, [day])

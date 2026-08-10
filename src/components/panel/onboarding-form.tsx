@@ -10,7 +10,7 @@ import { useRouter } from '@/i18n/navigation'
 import { apiErrorKey, type ApiErrorMessageKey } from '@/lib/api'
 import { updateUser } from '@/lib/auth-client'
 import { saveProfile, TherapyApiError } from '@/lib/therapy/client'
-import { DEVICE_GUIDE_IDS, type DeviceGuideId } from '@/lib/therapy/device-guides'
+import { DEVICE_COVERAGE, DEVICE_GUIDE_IDS, type DeviceGuideId } from '@/lib/therapy/device-guides'
 import { ExampleButton } from './example-button'
 import { ProfileFields, type ProfileFieldValues } from './profile-fields'
 import { PanelCard } from './panel-card'
@@ -106,8 +106,13 @@ export function OnboardingForm({
                 }}
               >
                 {DEVICE_GUIDE_IDS.map((id) => (
-                  <ToggleGroupItem key={id} value={id} className="w-full justify-start">
-                    {devices(id)}
+                  <ToggleGroupItem key={id} value={id} className="w-full justify-start gap-2">
+                    <span>{devices(id)}</span>
+                    {DEVICE_COVERAGE[id] === 'unknown' ? null : (
+                      <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+                        {DEVICE_COVERAGE[id] === 'verified' ? devices('coverageVerified') : devices('coverageRead')}
+                      </span>
+                    )}
                   </ToggleGroupItem>
                 ))}
               </ToggleGroup>

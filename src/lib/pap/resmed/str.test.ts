@@ -100,6 +100,47 @@ describe('the labels an S9 writes into STR.edf', () => {
   })
 })
 
+describe('a reading the card never wrote', () => {
+  it('is reported as missing rather than as a measured zero', () => {
+    const day = strDay({ Mode: 1, AHI: 4 }, AIRSENSE_10)
+
+    expect(day.summary.ahi).toBe(4)
+    expect(day.summary.reraIndex).toBeNull()
+    expect(day.summary.uai).toBeNull()
+    expect(day.summary.csrMinutes).toBeNull()
+    expect(day.summary.ambientHumidity).toBeNull()
+    expect(day.summary.humidifierTemperature).toBeNull()
+  })
+
+  it('leaves a whole statistic missing rather than reporting a median of zero for it', () => {
+    const day = strDay({ Mode: 1, 'Leak.50': 10 }, AIRSENSE_10, { 'Leak.50': [2, 100] })
+
+    expect(day.summary.leak.median).toBeCloseTo(12)
+    expect(day.summary.leak.percentile95).toBeNull()
+    expect(day.summary.leak.max).toBeNull()
+    expect(day.summary.targetEpap.median).toBeNull()
+  })
+
+  it('reports no therapy mode at all rather than defaulting to CPAP and inventing a prescribed pressure', () => {
+    const day = strDay({ AHI: 4, 'S.C.Press': 11 }, AIRSENSE_10)
+
+    expect(day.settings.mode).toBeNull()
+    expect(day.settings.setPressure).toBeNull()
+    expect(day.settings.minPressure).toBeNull()
+    expect(day.settings.maxPressure).toBeNull()
+    expect(day.settings.startPressure).toBeNull()
+  })
+
+  it('reports an unknown comfort setting rather than the first entry of the enum table', () => {
+    const day = strDay({ Mode: 1 }, AIRSENSE_10)
+
+    expect(day.settings.maskType).toBe('Unknown')
+    expect(day.settings.smartStart).toBe('Unknown')
+    expect(day.settings.humidifierLevel).toBeNull()
+    expect(day.settings.tubeTemperature).toBeNull()
+  })
+})
+
 const MASK_SLOTS = 20
 const NO_MASK_TIME = -1
 

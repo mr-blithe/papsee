@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, FolderOpen, Loader2, TriangleAlert } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
-import { BRAND_NAMES, isSupported, type CardBrand } from '@/lib/pap'
+import { BRAND_NAMES, RECOGNISED_BRANDS, isSupported, type CardBrand } from '@/lib/pap'
 import { detectCard } from '@/lib/pap/detect'
 import { loadBrowserFiles, type LoadProgress } from '@/lib/pap/sources'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,15 @@ type ImportState =
   | { status: 'unsupported'; brand: CardBrand | null }
   | { status: 'failed'; key: ApiErrorMessageKey }
   | { status: 'done'; nights: number }
+
+function CoverageRow({ term, detail }: { term: string; detail: string }) {
+  return (
+    <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-3">
+      <dt className="shrink-0 font-medium sm:w-64">{term}</dt>
+      <dd className="min-w-0 text-muted-foreground">{detail}</dd>
+    </div>
+  )
+}
 
 export function ImportScreen({ device }: { device: DeviceGuideId | null }) {
   const t = useTranslations('Import')
@@ -248,7 +257,17 @@ export function ImportScreen({ device }: { device: DeviceGuideId | null }) {
 
       <PanelCard>
         <PanelCardHeader title={t('supportTitle')} description={t('supportDescription')} />
-        <p className="px-5 py-4 text-sm">{t('supportedDevices')}</p>
+        <div className="space-y-3 px-5 py-4 text-sm">
+          <p className="text-muted-foreground">{t('supportedDevices')}</p>
+          <dl className="space-y-2">
+            <CoverageRow term={t('coverageVerified')} detail={t('coverageVerifiedDevices')} />
+            <CoverageRow term={t('coverageRead')} detail={t('coverageReadDevices')} />
+            <CoverageRow
+              term={t('coverageRecognised')}
+              detail={RECOGNISED_BRANDS.map((brand) => BRAND_NAMES[brand]).join(', ')}
+            />
+          </dl>
+        </div>
       </PanelCard>
 
       <p className="text-center text-xs text-muted-foreground">

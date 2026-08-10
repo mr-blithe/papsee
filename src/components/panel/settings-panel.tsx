@@ -7,8 +7,12 @@ import { DataList, PanelCard, PanelCardHeader } from './panel-card'
 
 type Translate = ReturnType<typeof useTranslations<'Settings'>>
 
+const NOT_RECORDED = '-'
+
 function therapyItems(settings: DaySettings, t: Translate) {
-  const items: { label: string; value: string; term?: TermId }[] = [{ label: t('mode'), value: settings.mode }]
+  const items: { label: string; value: string; term?: TermId }[] = [
+    { label: t('mode'), value: settings.mode ?? NOT_RECORDED },
+  ]
 
   if (settings.setPressure !== null) {
     items.push({ label: t('setPressure'), value: `${settings.setPressure.toFixed(1)} cmH2O` })
@@ -19,17 +23,21 @@ function therapyItems(settings: DaySettings, t: Translate) {
   }
 
   items.push(
-    { label: t('startPressure'), value: `${settings.startPressure?.toFixed(1) ?? '-'} cmH2O` },
+    { label: t('startPressure'), value: `${settings.startPressure?.toFixed(1) ?? NOT_RECORDED} cmH2O` },
     {
       label: t('epr'),
       term: settings.eprType === 'Off' ? undefined : ('eprFullTime' as const),
       value:
-        settings.eprType === 'Off' ? t('off') : t('eprLevel', { type: settings.eprType, level: settings.eprLevel }),
+        settings.eprType === 'Off'
+          ? t('off')
+          : settings.eprLevel === null
+            ? settings.eprType
+            : t('eprLevel', { type: settings.eprType, level: settings.eprLevel }),
     },
     {
       label: t('ramp'),
       value:
-        settings.rampMode === 'Auto'
+        settings.rampMinutes === null
           ? settings.rampMode
           : t('rampMinutes', { mode: settings.rampMode, minutes: settings.rampMinutes }),
     },
@@ -38,7 +46,12 @@ function therapyItems(settings: DaySettings, t: Translate) {
     { label: t('antibacterialFilter'), value: settings.antibacterialFilter },
     {
       label: t('humidifier'),
-      value: settings.humidifierEnabled === 'On' ? t('humidifierLevel', { level: settings.humidifierLevel }) : t('off'),
+      value:
+        settings.humidifierEnabled !== 'On'
+          ? t('off')
+          : settings.humidifierLevel === null
+            ? settings.humidifierEnabled
+            : t('humidifierLevel', { level: settings.humidifierLevel }),
     },
     { label: t('climateControl'), value: settings.climateControl },
     {
@@ -46,10 +59,12 @@ function therapyItems(settings: DaySettings, t: Translate) {
       value:
         settings.heatedTube === 'Off'
           ? t('off')
-          : t('heatedTubeTemperature', {
-              mode: settings.heatedTube,
-              temperature: settings.tubeTemperature.toFixed(0),
-            }),
+          : settings.tubeTemperature === null
+            ? settings.heatedTube
+            : t('heatedTubeTemperature', {
+                mode: settings.heatedTube,
+                temperature: settings.tubeTemperature.toFixed(0),
+              }),
     },
     { label: t('patientView'), value: settings.patientAccess },
   )

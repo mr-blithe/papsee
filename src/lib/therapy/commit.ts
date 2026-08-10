@@ -19,6 +19,7 @@ const CARD_LEVEL_FILES = ['identification.json', 'identification.tgt', 'currents
 export type CommitProgress =
   | { status: 'progress'; committed: string[]; remaining: number; done: boolean; unreadable: string[] }
   | { status: 'unsupported'; brand: CardBrand | null }
+  | { status: 'empty' }
   | { status: 'notFound' }
 
 function isCardLevel(path: string): boolean {
@@ -69,6 +70,10 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
 
   if (!isSupported(metadata.brand) || dates.length === 0) {
     await db.delete(papImport).where(and(eq(papImport.id, importId), eq(papImport.userId, userId)))
+
+    // A readable card the patient simply never slept with is not an unreadable card, and telling them
+    // the brand is unsupported would be a lie they cannot act on.
+    if (isSupported(metadata.brand)) return { status: 'empty' }
 
     return { status: 'unsupported', brand: metadata.brand }
   }

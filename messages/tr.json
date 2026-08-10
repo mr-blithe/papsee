@@ -20,7 +20,7 @@
     "createAccount": "Hesap oluştur",
     "proofDetail": "Her cihazdan erişim",
     "proofTrends": "Zaman içindeki değişimler",
-    "proofContext": "Hesabınıza bağlı geçmiş",
+    "proofContext": "Ücretsiz ve açık kaynak",
     "previewLabel": "Örnek PapSee genel bakışı",
     "whyEyebrow": "Geçmişiniz sizinle",
     "whyTitle": "Tedavi geçmişiniz tek bir bilgisayara veya SD karta bağlı kalmasın.",
@@ -61,7 +61,7 @@
     "stepReturnBody": "Giriş yaptığınız her cihazdan tedavinizin haftalar ve aylar içindeki seyrini izleyin.",
     "coverageEyebrow": "Cihaz kapsamı",
     "coverageTitle": "Neleri okuyabildiği konusunda açık.",
-    "coverageBody": "PapSee şimdilik ResMed AirSense cihazlarının verilerini destekliyor. Diğer PAP cihazları ve Apple Health senkronizasyonu en yakın zamanda eklenecek.",
+    "coverageBody": "PapSee bugün ResMed kartlarını okuyor. Gerçek bir AirSense 11 kartıyla doğrulandı; AirSense 10, AirCurve ve S9 biçimleri ise uygulandı ve sentetik kartlarla test edildi. Diğer markalar en azından adıyla tanınıyor, böylece okunamayan bir kart hiçbir zaman boş bir gece sanılmıyor.",
     "sourceEyebrow": "Açık kaynak",
     "sourceTitle": "Kaynak kodlarını inceleyin, kendi sunucunuzda barındırın.",
     "sourceBody": "PapSee, AGPL ile yayımlanan özgür bir yazılımdır. İçe aktardığınız bir geceye tam olarak ne olduğunu okuyabilir, hatalı görünen bir sayıyı bildirebilir veya uygulamanın tamamını kendiniz barındırarak tedavi verilerinizin denetlediğiniz bir bilgisayardan hiç çıkmamasını sağlayabilirsiniz.",
@@ -70,7 +70,8 @@
     "closingBody": "PAP cihazınızın kaydettiği ayrıntıları tek yerde görün ve zaman içindeki değişimi izleyin.",
     "disclaimer": "PapSee, PAP cihazınızın kaydettiği verileri gösterir. Tanı koymaz ve tıbbi tavsiye vermez.",
     "nightsTitle": "Seçili aralıktaki geceler",
-    "nightsDescription": "Kullanım süresi ve AHI değerleri, en yeni geceden başlayarak."
+    "nightsDescription": "Kullanım süresi ve AHI değerleri, en yeni geceden başlayarak.",
+    "coverageRecognised": "Tanınıyor, henüz okunmuyor: {brands}."
   },
   "Nav": {
     "therapy": "Günlük veriler",
@@ -409,7 +410,9 @@
     "resmedAirSense10": "ResMed AirSense 10",
     "resmedAirCurve": "ResMed AirCurve 10 veya 11",
     "resmedS9": "ResMed S9",
-    "other": "Diğer cihaz"
+    "other": "Diğer cihaz",
+    "coverageVerified": "Doğrulandı",
+    "coverageRead": "Destekleniyor"
   },
   "ApiErrors": {
     "invalidRequest": "İstek, sunucunun okuyabileceği biçimde değildi. Yeniden deneyin.",
@@ -418,6 +421,7 @@
     "notFound": "Bu geceye ait veri artık bulunmuyor.",
     "payloadTooLarge": "Karttaki bir dosya tek parçada gönderilemeyecek kadar büyük.",
     "unsupportedCard": "Kartta okunabilir tedavi verisi bulunamadı.",
+    "emptyCard": "Kart okundu, ancak henüz tedavi görülen bir gece içermiyor.",
     "unknown": "Bir sorun oluştu. Yeniden deneyin."
   },
   "Demo": {
@@ -468,12 +472,17 @@
     "failedTitle": "İşlem tamamlanamadı",
     "supportTitle": "Cihaz desteği",
     "supportDescription": "Mevcut cihaz desteği.",
-    "supportedDevices": "ResMed AirSense cihazları destekleniyor. Diğer cihazlar için destek en yakın zamanda gelecek.",
+    "supportedDevices": "ResMed kartları okunuyor. Diğerleri en azından adıyla tanınıyor; böylece PapSee size boş bir gece göstermek yerine kartı okuyamadığını söylüyor.",
     "changeDevice": "Cihazı değiştir",
     "committing": "Geceleriniz hazırlanıyor",
     "committingProgress": "Geceleriniz hazırlanıyor, {total} geceden {committed} tanesi",
     "stayCaution": "Bu sekmeyi açık tutun ve sayfada kalın. İşlem bitmeden ayrılırsanız aktarma iptal olur ve baştan başlamanız gerekir.",
-    "heldBack": "Aktarma sürerken bu sayfadan ayrılamazsınız."
+    "heldBack": "Aktarma sürerken bu sayfadan ayrılamazsınız.",
+    "coverageVerified": "Gerçek bir kartla doğrulandı",
+    "coverageRead": "Okunuyor, henüz gerçek bir kartla doğrulanmadı",
+    "coverageRecognised": "Tanınıyor, henüz okunmuyor",
+    "coverageVerifiedDevices": "ResMed AirSense 11",
+    "coverageReadDevices": "ResMed AirSense 10, AirCurve 10 ve 11, S9"
   },
   "Overview": {
     "title": "Genel bakış",
@@ -615,6 +624,7 @@
     "contactTitle": "İletişim",
     "contactIntro": "Hesabınız, verileriniz veya hatalı gördüğünüz bir konu için bize ulaşabilirsiniz.",
     "sourceTitle": "Kaynak kodu",
+    "version": "v{version}",
     "pending": "Bu sayfa henüz yazılıyor. PapSee beta sürecinden çıkmadan önce yayımlanacak."
   }
 }

@@ -105,6 +105,18 @@ describe('unmapped values', () => {
     expect(enumDecoder(AIRSENSE_10).onOff(9)).toBe('Unknown (9)')
     expect(enumDecoder(AIRSENSE_10).mode(99)).toBe('Unknown (99)')
   })
+
+  it('reports a setting the card never wrote as unknown, not as the first entry of the table', () => {
+    const decode = enumDecoder(AIRSENSE_10)
+
+    expect(decode.onOff(null)).toBe('Unknown')
+    expect(decode.mask(null)).toBe('Unknown')
+    expect(decode.eprType(null)).toBe('Unknown')
+    expect(decode.rampMode(null)).toBe('Unknown')
+    expect(decode.climateControl(null)).toBe('Unknown')
+    expect(decode.patientAccess(null)).toBe('Unknown')
+    expect(decode.yesNo(null)).toBe('Unknown')
+  })
 })
 
 describe('isAutoMode', () => {

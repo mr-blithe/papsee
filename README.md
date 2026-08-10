@@ -41,9 +41,29 @@ You upload what your machine wrote to the card. PapSee parses it and gives the n
 - **Export.** JSON and CSV, so there is something to actually send your doctor.
 - **An example patient.** Click through every screen with generated data, without signing up or uploading anything.
 
+PapSee is in beta and under active development, so expect bugs, rough edges and screens that change under you. If
+you find something wrong, saying so is the most useful thing you can do with it.
+
+## Device coverage
+
+The word "support" is doing too much work in most tools, so here it is split three ways.
+
+| Level                    | Devices                                                                                 | What it means                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Verified**             | ResMed AirSense 11                                                                      | Read back from a real card of that family, front to back                                         |
+| **Supported**            | ResMed AirSense 10, AirCurve 10 and 11, ResMed S9                                       | The format is implemented and tested against synthetic cards, but no real card has been seen yet |
+| **Recognised, not read** | Philips Respironics, Fisher & Paykel, Löwenstein, DeVilbiss, Resvent, BMC, vREM, Yuwell | PapSee names the card and tells you it cannot read it, rather than showing you an empty night    |
+
+Bilevel, ASV and iVAPS modes import, but PapSee's stored shape cannot represent all of their settings yet, so treat
+those as partial whatever the family.
+
+If your machine is in the third row and you would be willing to share a card, that is the single thing that would
+move it up. Every brand after ResMed is blocked on real bytes, not on effort.
+
 ## Roadmap
 
-- More PAP device support.
+- More PAP device support, in rough order of how cheap and how wanted each is: Löwenstein Prisma, Philips
+  Respironics, BMC (also sold as React Health Luna and Respirox).
 - Mobile app
 - Syncing health data from Apple Health, Samsung Health
 - AI integration with MCP servers
@@ -82,6 +102,28 @@ Things worth knowing:
   empty and the features are simply not there. Everything else works.
 - Your therapy data lives in the `papsee_postgres-data` Docker volume. Back it up like anything else you care about.
 
+### From the published images
+
+Every release publishes two images to the GitHub Container Registry, for `linux/amd64` and `linux/arm64`, so you can
+run a version without cloning anything. They come as a pair and the order matters: the app image carries no migration
+tooling, so the database is brought to the release's schema first.
+
+```bash
+docker run --rm --network host \
+  -e DATABASE_URL=postgres://papsee:papsee@localhost:5432/papsee \
+  ghcr.io/mr-blithe/papsee-migrate:latest
+
+docker run -d --network host --env-file .env ghcr.io/mr-blithe/papsee:latest
+```
+
+Tags follow the release: `0.1.0` pins one, `0.1` and `0` follow patches and minors, `latest` is whatever came out
+last. To use them with the compose file above, replace each service's `build:` block with the matching `image:`.
+
+One thing a published image cannot do for you: `NEXT_PUBLIC_*` values are compiled in, so these images carry the
+ones the release was built with. Analytics is off and stays off, `NEXT_PUBLIC_SOURCE_URL` points at this repository,
+and **the Turnstile challenge on sign-up is not in them**, because a site key belongs to whoever runs the instance.
+If you want that challenge, or your own source link on a fork, build the image yourself with those build arguments.
+
 ### Without Docker
 
 You need Node 24, pnpm 11 and a Postgres 17 of your own.
@@ -101,11 +143,6 @@ If your `DATABASE_URL` goes through a connection pooler, on a provider like Neon
 set `DATABASE_URL_UNPOOLED` to the same database's direct endpoint. `pnpm db:migrate` reads that one, because schema
 migrations need session state transaction pooling does not keep. A Postgres you connect to directly needs only
 `DATABASE_URL`, so leave the second one empty.
-
-## Contributing
-
-Contributions are welcome, and a bug report from a device I cannot test is worth as much as a patch.
-[`CONTRIBUTING.md`](CONTRIBUTING.md) has the detail.
 
 ## Translations
 

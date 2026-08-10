@@ -7,6 +7,7 @@ import { writeSyntheticCard } from './card'
 
 const SEED = 'papsee-example-user'
 const DATE = '2026-07-14'
+const ANNOTATION_TENTH_MS = 100
 
 describe('the shape of the card the writer emits', () => {
   const files = writeSyntheticCard({ seed: SEED, dates: [DATE] })
@@ -85,21 +86,21 @@ describe('reading a synthetic card back through the real importer', () => {
     const summary = card.days[0].summary
 
     expect(summary).not.toBeNull()
-    expect(summary?.ahi).toBeCloseTo(night.summary.ahi, 1)
-    expect(summary?.usageMinutes).toBeCloseTo(night.summary.usageMinutes, 0)
+    expect(summary?.ahi).toBeCloseTo(night.summary.ahi!, 1)
+    expect(summary?.usageMinutes).toBeCloseTo(night.summary.usageMinutes!, 0)
     expect(summary?.maskEvents).toBe(night.summary.maskEvents)
   })
 
   it('recovers the leak statistics in litres per minute, applying the device conversion', () => {
     const summary = card.days[0].summary
 
-    expect(summary?.leak.percentile95).toBeCloseTo(night.summary.leak.percentile95, 0)
+    expect(summary?.leak.percentile95).toBeCloseTo(night.summary.leak.percentile95!, 0)
   })
 
   it('recovers tidal volume in millilitres, applying the device conversion', () => {
     const summary = card.days[0].summary
 
-    expect(summary?.tidalVolume.median).toBeCloseTo(night.summary.tidalVolume.median, -1)
+    expect(summary?.tidalVolume.median).toBeCloseTo(night.summary.tidalVolume.median!, -1)
   })
 
   it('decodes the AirSense 11 enums rather than reporting an unknown', () => {
@@ -127,6 +128,20 @@ describe('reading a synthetic card back through the real importer', () => {
     const recovered = card.days[0].sessions.flatMap((session) => session.events)
 
     expect(recovered).toHaveLength(night.events.length)
+  })
+
+  it('recovers how long each run of periodic breathing lasted, which the card only writes as two flags', () => {
+    const recovered = card.days[0].sessions
+      .flatMap((session) => session.events)
+      .filter((event) => event.type === 'periodicBreathing')
+    const planted = night.events.filter((event) => event.type === 'periodicBreathing')
+
+    expect(recovered).toHaveLength(planted.length)
+    expect(recovered.length).toBeGreaterThan(0)
+    recovered.forEach((event, index) => {
+      expect(event.durationMs).toBeGreaterThan(0)
+      expect(Math.abs(event.durationMs - planted[index].durationMs)).toBeLessThanOrEqual(2 * ANNOTATION_TENTH_MS)
+    })
   })
 
   it('recovers each event type under the name the reader maps it to', () => {

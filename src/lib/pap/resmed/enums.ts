@@ -33,25 +33,46 @@ const AIRSENSE_11_MODE_TO_LEGACY: Record<number, number> = {
   8: 6,
 }
 
-function label(table: readonly string[], value: number): string {
+const UNKNOWN = 'Unknown'
+
+function label(table: readonly string[], value: number | null): string {
+  if (value === null) return UNKNOWN
   return table[value] ?? `Unknown (${value})`
 }
 
 export interface EnumDecoder {
   mode(raw: number): string
-  onOff(raw: number): string
-  onOffAuto(raw: number): string
-  eprType(raw: number): string
-  rampMode(raw: number): string
-  mask(raw: number): string
-  climateControl(raw: number): string
-  patientAccess(raw: number): string
-  yesNo(raw: number): string
+  onOff(raw: number | null): string
+  onOffAuto(raw: number | null): string
+  eprType(raw: number | null): string
+  rampMode(raw: number | null): string
+  mask(raw: number | null): string
+  climateControl(raw: number | null): string
+  patientAccess(raw: number | null): string
+  yesNo(raw: number | null): string
 }
 
-export function enumDecoder(modelNumber: number): EnumDecoder {
+/**
+ * Without a model number nothing can say which generation's tables apply, and the two disagree by one
+ * on almost every setting. Reporting unknown is the only honest answer.
+ */
+const UNKNOWN_GENERATION: EnumDecoder = {
+  mode: () => UNKNOWN,
+  onOff: () => UNKNOWN,
+  onOffAuto: () => UNKNOWN,
+  eprType: () => UNKNOWN,
+  rampMode: () => UNKNOWN,
+  mask: () => UNKNOWN,
+  climateControl: () => UNKNOWN,
+  patientAccess: () => UNKNOWN,
+  yesNo: () => UNKNOWN,
+}
+
+export function enumDecoder(modelNumber: number | null): EnumDecoder {
+  if (modelNumber === null) return UNKNOWN_GENERATION
+
   const isAirSense11 = modelNumber >= AIRSENSE_11_MIN_MODEL
-  const shift = (raw: number) => (isAirSense11 ? raw - 1 : raw)
+  const shift = (raw: number | null) => (raw === null ? null : isAirSense11 ? raw - 1 : raw)
 
   return {
     mode(raw) {
@@ -60,11 +81,12 @@ export function enumDecoder(modelNumber: number): EnumDecoder {
     },
     onOff: (raw) => label(OFF_ON, shift(raw)),
     onOffAuto: (raw) => label(OFF_ON_AUTO, shift(raw)),
-    eprType: (raw) => label(['Off', 'Ramp Only', 'Full Time'], isAirSense11 ? raw : raw + 1),
+    eprType: (raw) => label(['Off', 'Ramp Only', 'Full Time'], raw === null ? null : isAirSense11 ? raw : raw + 1),
     rampMode: (raw) => label(OFF_ON_AUTO, shift(raw)),
     mask(raw) {
-      if (!isAirSense11) return label(['Pillows', 'Full Face', 'Nasal', 'Unknown'], raw)
-      return raw < 2 || raw > 4 ? 'Unknown' : label(['Pillows', 'Full Face', 'Nasal'], raw - 2)
+      if (raw === null) return UNKNOWN
+      if (!isAirSense11) return label(['Pillows', 'Full Face', 'Nasal', UNKNOWN], raw)
+      return raw < 2 || raw > 4 ? UNKNOWN : label(['Pillows', 'Full Face', 'Nasal'], raw - 2)
     },
     climateControl: (raw) => label(['Auto', 'Manual'], shift(raw)),
     patientAccess: (raw) => label(isAirSense11 ? ['Advanced', 'Simple'] : ['Plus', 'On'], shift(raw)),

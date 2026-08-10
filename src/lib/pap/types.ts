@@ -93,10 +93,11 @@ export interface EventIndices extends EventCounts {
   reraIndex: number
 }
 
+/** A reading the card never wrote is null. It is never zero, which is a value the device can also mean. */
 export interface StatSummary {
-  median: number
-  percentile95: number
-  max: number
+  median: number | null
+  percentile95: number | null
+  max: number | null
 }
 
 export interface DeviceInfo {
@@ -122,46 +123,46 @@ export interface SettingGroup {
 }
 
 export interface DaySettings {
-  mode: string
+  mode: string | null
   setPressure: number | null
   minPressure: number | null
   maxPressure: number | null
   startPressure: number | null
   eprEnabled: string
   eprType: string
-  eprLevel: number
+  eprLevel: number | null
   rampMode: string
-  rampMinutes: number
+  rampMinutes: number | null
   smartStart: string
   maskType: string
   antibacterialFilter: string
   humidifierEnabled: string
-  humidifierLevel: number
+  humidifierLevel: number | null
   climateControl: string
   heatedTube: string
-  tubeTemperature: number
+  tubeTemperature: number | null
   patientAccess: string
 }
 
 export interface DaySummary {
-  usageMinutes: number
-  maskEvents: number
-  ahi: number
-  ai: number
-  hi: number
-  oai: number
-  cai: number
-  uai: number
-  reraIndex: number
-  csrMinutes: number
+  usageMinutes: number | null
+  maskEvents: number | null
+  ahi: number | null
+  ai: number | null
+  hi: number | null
+  oai: number | null
+  cai: number | null
+  uai: number | null
+  reraIndex: number | null
+  csrMinutes: number | null
   maskPressure: StatSummary
   leak: StatSummary
   minuteVentilation: StatSummary
   respiratoryRate: StatSummary
   tidalVolume: StatSummary
   targetEpap: StatSummary
-  ambientHumidity: number
-  humidifierTemperature: number
+  ambientHumidity: number | null
+  humidifierTemperature: number | null
 }
 
 export interface PapDay {

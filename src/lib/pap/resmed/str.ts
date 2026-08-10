@@ -97,12 +97,12 @@ class StrReader {
     return values
   }
 
-  at(labels: string[], record: number, fallback = 0): number {
+  at(labels: string[], record: number): number | null {
     const index = this.index(labels)
-    if (index < 0) return fallback
+    if (index < 0) return null
 
     const value = this.values(index)[record * this.edf.signals[index].samplesPerRecord]
-    return Number.isFinite(value) ? value : fallback
+    return Number.isFinite(value) ? value : null
   }
 
   samples(labels: string[], record: number): Float32Array | null {
@@ -125,17 +125,19 @@ function hasMaskUse(reader: StrReader, record: number): boolean {
 }
 
 function stat(reader: StrReader, record: number, labels: ReturnType<typeof statLabels>, scale = 1): StatSummary {
-  return {
-    median: reader.at(labels.median, record) * scale,
-    percentile95: reader.at(labels.percentile95, record) * scale,
-    max: reader.at(labels.max, record) * scale,
+  const scaled = (of: string[]) => {
+    const value = reader.at(of, record)
+    return value === null ? null : value * scale
   }
+
+  return { median: scaled(labels.median), percentile95: scaled(labels.percentile95), max: scaled(labels.max) }
 }
 
-function readSettings(reader: StrReader, record: number, modelNumber: number): DaySettings {
+function readSettings(reader: StrReader, record: number, modelNumber: number | null): DaySettings {
   const decode = enumDecoder(modelNumber)
-  const mode = decode.mode(reader.at(MODE, record))
-  const pressures = PRESSURE_BY_MODE[mode] ?? null
+  const rawMode = reader.at(MODE, record)
+  const mode = rawMode === null ? null : decode.mode(rawMode)
+  const pressures = mode === null ? null : (PRESSURE_BY_MODE[mode] ?? null)
 
   const eprEnabled = decode.onOff(reader.at(['S.EPR.EPREnable'], record))
   const clinicalEpr = decode.onOff(reader.at(['S.EPR.ClinEnable'], record))
@@ -150,9 +152,9 @@ function readSettings(reader: StrReader, record: number, modelNumber: number): D
     startPressure: pressures ? reader.at(pressures.start, record) : null,
     eprEnabled,
     eprType: eprActive ? decode.eprType(reader.at(['S.EPR.EPRType'], record)) : 'Off',
-    eprLevel: eprActive ? reader.at(EPR_LEVEL, record) : 0,
+    eprLevel: eprActive ? reader.at(EPR_LEVEL, record) : null,
     rampMode,
-    rampMinutes: rampMode === 'Auto' ? 0 : reader.at(['S.RampTime'], record),
+    rampMinutes: rampMode === 'Auto' ? null : reader.at(['S.RampTime'], record),
     smartStart: decode.onOff(reader.at(['S.SmartStart'], record)),
     maskType: decode.mask(reader.at(['S.Mask'], record)),
     antibacterialFilter: decode.yesNo(reader.at(['S.ABFilter'], record)),
@@ -193,7 +195,7 @@ export interface StrCalendar {
   coveredDates: string[]
 }
 
-export function parseStr(buffer: ArrayBuffer, modelNumber: number): StrCalendar {
+export function parseStr(buffer: ArrayBuffer, modelNumber: number | null): StrCalendar {
   const edf = parseEdf(buffer)
   const reader = new StrReader(edf)
   const days: CardDaySummary[] = []

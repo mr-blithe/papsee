@@ -84,6 +84,9 @@ export type UploadOutcome = { status: 'committed'; dates: string[] } | { status:
 
 const COMMIT_ATTEMPTS = 3
 
+/** Verdicts about the card itself. Retrying one only makes the reader wait for the same answer. */
+const FINAL_COMMIT_ERRORS: (string | undefined)[] = ['unsupportedCard', 'emptyCard']
+
 /**
  * Drives the commit to completion. Every slice is idempotent, so a blip is retried rather than
  * throwing away an upload that may have taken minutes.
@@ -107,7 +110,7 @@ export async function commitUpload(
         }
       } catch (error) {
         failure = error
-        if (error instanceof TherapyApiError && error.code === 'unsupportedCard') throw error
+        if (error instanceof TherapyApiError && FINAL_COMMIT_ERRORS.includes(error.code)) throw error
       }
     }
 

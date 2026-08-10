@@ -9,7 +9,7 @@ import type { CardBrand } from './detect'
 import type { CardDaySummary, DeviceInfo, PapDay, PapFile, PapImport, SettingGroup } from './types'
 
 export * from './types'
-export { BRAND_NAMES, isSupported, type CardBrand } from './detect'
+export { BRAND_NAMES, RECOGNISED_BRANDS, isSupported, type CardBrand } from './detect'
 export { isPapDayKey, papDayDate } from './device-time'
 export { toPapDay, type DigitalDay } from './digital'
 export { assignFilesToDays } from './files'
@@ -78,12 +78,14 @@ export function readCardMetadata(files: PapFile[], cardPaths: string[] = files.m
   let coveredDates: string[] = []
   if (strFile) {
     try {
-      const calendar = parseStr(strFile.data, device?.modelNumber ?? 0)
+      const calendar = parseStr(strFile.data, device?.modelNumber ?? null)
       daySummaries = calendar.days
       coveredDates = calendar.coveredDates
     } catch {
       unreadable.push(strFile.path)
     }
+
+    if (!device) unreadable.push(identificationJson?.path ?? identificationTgt?.path ?? 'Identification.json')
   }
 
   return { brand, device, settingGroups, daySummaries, coveredDates, unreadable }
