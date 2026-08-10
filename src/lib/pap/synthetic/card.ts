@@ -318,70 +318,72 @@ function strSignals(): EdfSignalSpec[] {
   ]
 }
 
-function strRecord(night: SyntheticNight, signals: EdfSignalSpec[]): EdfRecordBlock[] {
+function strRecord(night: SyntheticNight, signals: EdfSignalSpec[], used: boolean): EdfRecordBlock[] {
   const summary = night.summary
   const settings = night.settings
 
   const maskOn = Array.from({ length: 20 }, (_, index) => {
-    const session = night.sessions[index]
+    const session = used ? night.sessions[index] : undefined
     return session ? Math.round((session.startMs - night.noonMs) / 60_000) : NO_DATA
   })
   const maskOff = Array.from({ length: 20 }, (_, index) => {
-    const session = night.sessions[index]
+    const session = used ? night.sessions[index] : undefined
     return session ? Math.round((session.startMs + session.durationMs - night.noonMs) / 60_000) : NO_DATA
   })
 
-  const values: Record<string, number> = {
-    Duration: summary.usageMinutes,
-    MaskEvents: summary.maskEvents,
-    AHI: summary.ahi,
-    AI: summary.ai,
-    HI: summary.hi,
-    OAI: summary.oai,
-    CAI: summary.cai,
-    UAI: summary.uai,
-    RIN: summary.reraIndex,
-    CSR: summary.csrMinutes,
-    'MaskPress.50': summary.maskPressure.median,
-    'MaskPress.95': summary.maskPressure.percentile95,
-    'MaskPress.Max': summary.maskPressure.max,
-    'Leak.50': summary.leak.median,
-    'Leak.95': summary.leak.percentile95,
-    'Leak.Max': summary.leak.max,
-    'MinVent.50': summary.minuteVentilation.median,
-    'MinVent.95': summary.minuteVentilation.percentile95,
-    'MinVent.Max': summary.minuteVentilation.max,
-    'RespRate.50': summary.respiratoryRate.median,
-    'RespRate.95': summary.respiratoryRate.percentile95,
-    'RespRate.Max': summary.respiratoryRate.max,
-    'TidVol.50': summary.tidalVolume.median,
-    'TidVol.95': summary.tidalVolume.percentile95,
-    'TidVol.Max': summary.tidalVolume.max,
-    'TgtEPAP.50': summary.targetEpap.median,
-    'TgtEPAP.95': summary.targetEpap.percentile95,
-    'TgtEPAP.Max': summary.targetEpap.max,
-    'AmbHumidity.50': summary.ambientHumidity,
-    'HumTemp.50': summary.humidifierTemperature,
-    Mode: 1,
-    'S.A.MinPress': settings.minPressure ?? 0,
-    'S.A.MaxPress': settings.maxPressure ?? 0,
-    'S.A.StartPress': settings.startPressure ?? 0,
-    'S.EPR.EPREnable': 2,
-    'S.EPR.ClinEnable': 2,
-    'S.EPR.EPRType': 2,
-    'S.EPR.Level': settings.eprLevel,
-    'S.RampEnable': 3,
-    'S.RampTime': 0,
-    'S.SmartStart': 2,
-    'S.Mask': 3,
-    'S.ABFilter': 1,
-    'S.HumEnable': 2,
-    'S.HumLevel': settings.humidifierLevel,
-    'S.ClimateControl': 1,
-    'S.TempEnable': 2,
-    'S.Temp': settings.tubeTemperature,
-    'S.PtAccess': 1,
-  }
+  const values: Record<string, number> = !used
+    ? {}
+    : {
+        Duration: summary.usageMinutes,
+        MaskEvents: summary.maskEvents,
+        AHI: summary.ahi,
+        AI: summary.ai,
+        HI: summary.hi,
+        OAI: summary.oai,
+        CAI: summary.cai,
+        UAI: summary.uai,
+        RIN: summary.reraIndex,
+        CSR: summary.csrMinutes,
+        'MaskPress.50': summary.maskPressure.median,
+        'MaskPress.95': summary.maskPressure.percentile95,
+        'MaskPress.Max': summary.maskPressure.max,
+        'Leak.50': summary.leak.median,
+        'Leak.95': summary.leak.percentile95,
+        'Leak.Max': summary.leak.max,
+        'MinVent.50': summary.minuteVentilation.median,
+        'MinVent.95': summary.minuteVentilation.percentile95,
+        'MinVent.Max': summary.minuteVentilation.max,
+        'RespRate.50': summary.respiratoryRate.median,
+        'RespRate.95': summary.respiratoryRate.percentile95,
+        'RespRate.Max': summary.respiratoryRate.max,
+        'TidVol.50': summary.tidalVolume.median,
+        'TidVol.95': summary.tidalVolume.percentile95,
+        'TidVol.Max': summary.tidalVolume.max,
+        'TgtEPAP.50': summary.targetEpap.median,
+        'TgtEPAP.95': summary.targetEpap.percentile95,
+        'TgtEPAP.Max': summary.targetEpap.max,
+        'AmbHumidity.50': summary.ambientHumidity,
+        'HumTemp.50': summary.humidifierTemperature,
+        Mode: 1,
+        'S.A.MinPress': settings.minPressure ?? 0,
+        'S.A.MaxPress': settings.maxPressure ?? 0,
+        'S.A.StartPress': settings.startPressure ?? 0,
+        'S.EPR.EPREnable': 2,
+        'S.EPR.ClinEnable': 2,
+        'S.EPR.EPRType': 2,
+        'S.EPR.Level': settings.eprLevel,
+        'S.RampEnable': 3,
+        'S.RampTime': 0,
+        'S.SmartStart': 2,
+        'S.Mask': 3,
+        'S.ABFilter': 1,
+        'S.HumEnable': 2,
+        'S.HumLevel': settings.humidifierLevel,
+        'S.ClimateControl': 1,
+        'S.TempEnable': 2,
+        'S.Temp': settings.tubeTemperature,
+        'S.PtAccess': 1,
+      }
 
   return signals.map((spec) => {
     if (spec.label === 'MaskOn') return maskOn
@@ -396,10 +398,12 @@ export interface SyntheticCardOptions {
   seed: string
   dates: string[]
   waveforms?: boolean
+  noUseDates?: string[]
 }
 
 export function writeSyntheticCard(options: SyntheticCardOptions): PapFile[] {
   const nights = options.dates.map((date) => planNight(options.seed, date))
+  const unused = new Set(options.noUseDates ?? [])
   const signals = strSignals()
   const encoder = new TextEncoder()
   const first = stamp(nights[0].noonMs)
@@ -415,7 +419,7 @@ export function writeSyntheticCard(options: SyntheticCardOptions): PapFile[] {
         declaredRecordCount: UNKNOWN_RECORD_COUNT,
         recordDuration: 86400,
         signals,
-        records: nights.map((night) => strRecord(night, signals)),
+        records: nights.map((night) => strRecord(night, signals, !unused.has(night.date))),
       }),
     },
   ]
@@ -423,6 +427,8 @@ export function writeSyntheticCard(options: SyntheticCardOptions): PapFile[] {
   if (options.waveforms === false) return files
 
   for (const night of nights) {
+    if (unused.has(night.date)) continue
+
     for (const session of night.sessions) {
       files.push(waveformFile(night, session, 'BRP', BRP_RECORD_SECONDS, BRP_INTERVAL_MS, BRP_WAVEFORMS))
       files.push(waveformFile(night, session, 'PLD', PLD_RECORD_SECONDS, PLD_INTERVAL_MS, PLD_WAVEFORMS))

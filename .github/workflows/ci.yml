@@ -15,7 +15,6 @@ permissions:
 
 env:
   NEXT_TELEMETRY_DISABLED: '1'
-  DATABASE_URL: postgres://papsee:papsee@127.0.0.1:5432/papsee
   BETTER_AUTH_SECRET: ci-only-better-auth-secret-at-least-32-characters
   BETTER_AUTH_URL: http://localhost:3000
 

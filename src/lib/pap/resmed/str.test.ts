@@ -23,7 +23,7 @@ function strDay(values: Record<string, number>, modelNumber: number, scaled: Rec
     records: [labels.map((label) => [values[label]])],
   })
 
-  return parseStr(buffer, modelNumber)[0]
+  return parseStr(buffer, modelNumber).days[0]
 }
 
 describe('the pressure signals a mode actually uses', () => {
@@ -97,5 +97,97 @@ describe('the labels an S9 writes into STR.edf', () => {
   it('reads the therapy mode from the localised label a non English device writes', () => {
     expect(strDay({ Mod: 3, 'S.C.Press': 9 }, AIRSENSE_11).settings.mode).toBe('CPAP')
     expect(strDay({ Modus: 1 }, AIRSENSE_10).settings.mode).toBe('AutoSet')
+  })
+})
+
+const MASK_SLOTS = 20
+const NO_MASK_TIME = -1
+
+function maskSignal(label: string): EdfSignalSpec {
+  return {
+    label,
+    unit: '',
+    physicalMin: 0,
+    physicalMax: 1440,
+    digitalMin: 0,
+    digitalMax: 1440,
+    samplesPerRecord: MASK_SLOTS,
+  }
+}
+
+function maskSlots(...minutes: number[]): number[] {
+  return Array.from({ length: MASK_SLOTS }, (_, slot) => minutes[slot] ?? NO_MASK_TIME)
+}
+
+function strCalendar(records: { on: number[]; off: number[]; values: Record<string, number> }[], modelNumber: number) {
+  const labels = Object.keys(records[0].values)
+
+  return parseStr(
+    buildEdf({
+      declaredRecordCount: '-1',
+      recordDuration: DAY_SECONDS,
+      signals: [maskSignal('MaskOn'), maskSignal('MaskOff'), ...labels.map((label) => signal(label, 1440, 1440))],
+      records: records.map((record) => [record.on, record.off, ...labels.map((label) => [record.values[label]])]),
+    }),
+    modelNumber,
+  )
+}
+
+describe('a calendar day the device wrote but nobody slept through', () => {
+  it('is not reported as a therapy night, so it cannot dilute a trend or fill the day strip', () => {
+    const calendar = strCalendar(
+      [
+        { on: maskSlots(620), off: maskSlots(1000), values: { Duration: 380 } },
+        { on: maskSlots(), off: maskSlots(), values: { Duration: 0 } },
+        { on: maskSlots(640), off: maskSlots(1010), values: { Duration: 370 } },
+      ],
+      AIRSENSE_10,
+    )
+
+    expect(calendar.days).toHaveLength(2)
+    expect(calendar.days.map((day) => day.summary.usageMinutes)).toEqual([380, 370])
+  })
+
+  it('is still reported as covered, so re-importing the card clears whatever an older import left there', () => {
+    const calendar = strCalendar(
+      [
+        { on: maskSlots(620), off: maskSlots(1000), values: { Duration: 380 } },
+        { on: maskSlots(), off: maskSlots(), values: { Duration: 0 } },
+      ],
+      AIRSENSE_10,
+    )
+
+    expect(calendar.coveredDates).toHaveLength(2)
+    expect(calendar.coveredDates[0]).toBe(calendar.days[0].date)
+  })
+
+  it('ignores a mask that came on and off at the same minute, which is no use at all', () => {
+    const calendar = strCalendar([{ on: maskSlots(700), off: maskSlots(700), values: { Duration: 0 } }], AIRSENSE_10)
+
+    expect(calendar.days).toEqual([])
+  })
+
+  it('keeps a night whose second session is the only one recorded', () => {
+    const calendar = strCalendar(
+      [{ on: maskSlots(NO_MASK_TIME, 700), off: maskSlots(NO_MASK_TIME, 900), values: { Duration: 200 } }],
+      AIRSENSE_10,
+    )
+
+    expect(calendar.days).toHaveLength(1)
+    expect(calendar.days[0].summary.usageMinutes).toBe(200)
+  })
+
+  it('keeps every record when the card writes no mask times at all, rather than discarding the whole card', () => {
+    const calendar = parseStr(
+      buildEdf({
+        declaredRecordCount: '-1',
+        recordDuration: DAY_SECONDS,
+        signals: [signal('Duration', 1440, 1440)],
+        records: [[[380]], [[0]]],
+      }),
+      AIRSENSE_10,
+    )
+
+    expect(calendar.days).toHaveLength(2)
   })
 })

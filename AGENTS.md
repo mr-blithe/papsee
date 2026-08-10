@@ -2,6 +2,11 @@
 
 Guidance for AI coding assistants working in this repository.
 
+**PapSee is public and open source.** The repository is on GitHub under AGPL v3, so every line written here, in the
+code, in a comment, in a test fixture, in a commit message and in this file, is read by strangers. Two standing
+rules follow from that and both are non negotiable: nothing in the repository identifies anyone, see Safety, and
+everything contributed carries the same licence, see Licence.
+
 ## What PapSee Is
 
 PapSee is a web platform for people with sleep apnea to read their own PAP therapy data. A reader signs up, uploads
@@ -197,11 +202,11 @@ drizzle/         Generated SQL migrations. Do not hand edit.
 
 `@/*` maps to `src/*`.
 
-Where the application actually stands: `/` is still a placeholder and `/panel` redirects to `/panel/overview`. A signed
+Where the application actually stands: `/` is the landing page and `/panel` redirects to `/panel/overview`. A signed
 in reader is walked through `/panel/onboarding` for a profile, then `/panel/import` for a device specific guide and the
 upload, and after that `/panel/overview` and `/panel/therapy` read what was stored. `panel-access.ts` enforces that
-order in the page: no profile sends you to onboarding, no stored days sends you to import. There is no export yet, and
-the policy pages are still owed.
+order in the page: no profile sends you to onboarding, no stored days sends you to import. `/panel/settings` holds the
+profile, the export downloads and the destructive actions, and `/privacy` and `/terms` render the seeded contracts.
 
 ### The stored import API
 
@@ -386,6 +391,11 @@ time fails the suite instead of passing on a machine that sits close enough to U
 Better Auth over Drizzle over Postgres, email and password plus Google. Local development runs against a Postgres 17
 of your own on 5432, named by `DATABASE_URL`.
 
+- **The build never needs a database.** `next build` imports every route module to collect page data, so a client
+  built at module scope turns `DATABASE_URL` into a requirement of the build itself, on Vercel, in CI and in the
+  Docker image alike, and a host that only sets it at runtime fails with a stack trace pointing at an API route.
+  `src/lib/db/index.ts` therefore hands out a proxy and connects on first use. Keep it that way, and keep the missing
+  variable an error a request reports rather than one a build does.
 - **Two schema files, one client.** `src/lib/db/schema.ts` belongs to the Better Auth CLI. Everything PapSee owns lives
   in `src/lib/db/pap-schema.ts`, which imports `user` for its foreign keys, and `src/lib/db/index.ts` composes both.
   `drizzle.config.ts` lists both paths, so a table added to only one of them silently never reaches a migration.
@@ -556,9 +566,12 @@ PostHog cookie is not strictly necessary, and the privacy policy in `src/lib/con
 languages under legitimate interest. There is no consent banner. Adding another non-essential cookie means revisiting
 that decision rather than assuming it: a banner that consents to nothing is worse than none, so raise the tension.
 
-**The policy pages are still owed.** A privacy policy, terms, and a plain-language data disclosure, as real routes
-under `src/app/[locale]/` in both languages. They are content, not scaffolding: draft them for the maintainer to
-review rather than generating and shipping them silently.
+**The policy pages are content, not scaffolding.** `/privacy` and `/terms` ship in both languages, seeded from
+`src/lib/contract-seeds.ts`, and each renders a plain-language `summary` above its body rather than owing a third
+document. `getPublishedContract` serves the newest row whose `publishedAt` has passed, and the seed upserts on
+`(type, locale, version)`: correcting wording means editing the seed in place and re-running `pnpm db:seed-contracts`,
+while publishing a revision means a new `version` and `publishedAt` so the old one stays readable. Either way the
+wording is drafted for the maintainer to review rather than generated and shipped silently.
 
 **PapSee is not a medical device.** It reports what the device recorded. It does not diagnose, it does not titrate, and
 it never tells anyone to change a setting. Keep the copy descriptive.
@@ -597,7 +610,7 @@ Ask first: adding a dependency (say why, and why nothing installed does the job)
 
 Never: copy GPL licensed source into this repository, or send the contents of a PAP import anywhere outside it.
 
-**This repository is written to be made public, so nothing in it identifies anyone.** No real names, email addresses,
+**This repository is public, so nothing in it identifies anyone.** No real names, email addresses,
 usernames, handles, machine names, absolute home directory paths, device serial numbers or local account details, in
 code, comments, tests, fixtures, commit messages, documentation or this file. That includes the maintainer: write
 "the maintainer" or "the reviewer", never a person's name, and do not record who decided something or who to ask.
@@ -614,8 +627,13 @@ PapSee is **AGPL v3**, in `LICENSE`, verbatim from the FSF, and `package.json` c
   a further restriction, cannot go in. This is a reason a package gets rejected, alongside maintenance and size.
 - **The source offer in the footer is part of the licence, not decoration.** See Self hosting.
 
-Reading OSCAR is still fine and copying it is still not. GPL v3 code cannot be pasted into an AGPL v3 project and
-relicensed, and the rule in Safety stands unchanged.
+Reading OSCAR is still fine and copying it is still not, but be accurate about why. The licences do not forbid it:
+[GPL v3 section 13](https://www.gnu.org/licenses/gpl-3.0.en.html) grants "permission to link or combine any covered
+work with a work licensed under version 3 of the GNU Affero General Public License into a single combined work".
+What is forbidden is relicensing, since those parts keep GPL v3 and their attribution. The rule in Safety is a
+project decision on top of that, and it holds for two reasons: every rule in `src/lib/pap/` has to be verified
+against real card bytes and pinned by a test, which a pasted implementation never is, and a public codebase should
+have provenance a reader can check.
 
 `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` and the templates in `.github/` are the public facing rules.
 They restate parts of this file on purpose, for people who will never read it, so a rule that changes here has to

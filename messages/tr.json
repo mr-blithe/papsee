@@ -63,7 +63,7 @@
     "coverageTitle": "Neleri okuyabildiği konusunda açık.",
     "coverageBody": "PapSee şimdilik ResMed AirSense cihazlarının verilerini destekliyor. Diğer PAP cihazları ve Apple Health senkronizasyonu en yakın zamanda eklenecek.",
     "sourceEyebrow": "Açık kaynak",
-    "sourceTitle": "Kodu okuyun ya da kendi bilgisayarınızda barındırın.",
+    "sourceTitle": "Kaynak kodlarını inceleyin, kendi sunucunuzda barındırın.",
     "sourceBody": "PapSee, AGPL ile yayımlanan özgür bir yazılımdır. İçe aktardığınız bir geceye tam olarak ne olduğunu okuyabilir, hatalı görünen bir sayıyı bildirebilir veya uygulamanın tamamını kendiniz barındırarak tedavi verilerinizin denetlediğiniz bir bilgisayardan hiç çıkmamasını sağlayabilirsiniz.",
     "sourceCta": "GitHub'da yıldız verin",
     "closingTitle": "Gecelerinizi okunabilir bir geçmişe dönüştürün.",

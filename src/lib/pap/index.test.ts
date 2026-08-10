@@ -188,3 +188,30 @@ describe('parsing one night at a time instead of the whole card', () => {
     expect(intact.day.sessions.length).toBeGreaterThan(0)
   })
 })
+
+describe('a card covering nights the machine was never switched on', () => {
+  const DATES = ['2026-07-14', '2026-07-15', '2026-07-16']
+  const SKIPPED = DATES[1]
+
+  const sparse = writeSyntheticCard({ seed: SEED, dates: DATES, noUseDates: [SKIPPED] })
+
+  it('imports only the nights with therapy on them, so a year of standby does not become a year of history', () => {
+    expect(importPapData(sparse).days.map((day) => day.date)).toEqual([DATES[0], DATES[2]])
+  })
+
+  it('leaves the unused night out of the summaries the commit writes its day rows from', () => {
+    const metadata = readCardMetadata(
+      sparse.filter((file) => !isDatalogPath(file.path)),
+      sparse.map((file) => file.path),
+    )
+
+    expect(metadata.daySummaries.map((day) => day.date)).toEqual([DATES[0], DATES[2]])
+  })
+
+  it('still reads the nights either side of it in full', () => {
+    for (const day of importPapData(sparse).days) {
+      expect(day.sessions.length).toBeGreaterThan(0)
+      expect(day.summary?.usageMinutes).toBeGreaterThan(0)
+    }
+  })
+})

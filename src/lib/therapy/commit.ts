@@ -65,6 +65,7 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
   for (const date of assignment.values()) if (date) datalogDates.add(date)
 
   const dates = [...new Set([...datalogDates, ...metadata.daySummaries.map((day) => day.date)])].sort()
+  const replaced = [...new Set([...dates, ...metadata.coveredDates])]
 
   if (!isSupported(metadata.brand) || dates.length === 0) {
     await db.delete(papImport).where(and(eq(papImport.id, importId), eq(papImport.userId, userId)))
@@ -75,7 +76,7 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
   const summaries = new Map(metadata.daySummaries.map((day) => [day.date, day]))
 
   await db.transaction(async (tx) => {
-    await tx.delete(papDay).where(and(eq(papDay.userId, userId), inArray(papDay.date, dates)))
+    await tx.delete(papDay).where(and(eq(papDay.userId, userId), inArray(papDay.date, replaced)))
 
     for (const date of dates) {
       const summary = summaries.get(date) ?? null

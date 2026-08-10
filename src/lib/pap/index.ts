@@ -45,6 +45,8 @@ export interface CardMetadata {
   device: DeviceInfo | null
   settingGroups: SettingGroup[]
   daySummaries: CardDaySummary[]
+  /** Every date the card holds an STR record for, including the ones with no therapy on them. */
+  coveredDates: string[]
   unreadable: string[]
 }
 
@@ -57,7 +59,7 @@ export function readCardMetadata(files: PapFile[], cardPaths: string[] = files.m
   const brand = detectCard(cardPaths)
 
   if (!isSupported(brand)) {
-    return { brand, device: null, settingGroups: [], daySummaries: [], unreadable }
+    return { brand, device: null, settingGroups: [], daySummaries: [], coveredDates: [], unreadable }
   }
 
   const identificationJson = files.find((file) => matches(file.path, 'Identification.json'))
@@ -73,15 +75,18 @@ export function readCardMetadata(files: PapFile[], cardPaths: string[] = files.m
   const settingGroups = settingsFile ? parseCurrentSettings(decodeText(settingsFile.data)) : []
 
   let daySummaries: CardDaySummary[] = []
+  let coveredDates: string[] = []
   if (strFile) {
     try {
-      daySummaries = parseStr(strFile.data, device?.modelNumber ?? 0)
+      const calendar = parseStr(strFile.data, device?.modelNumber ?? 0)
+      daySummaries = calendar.days
+      coveredDates = calendar.coveredDates
     } catch {
       unreadable.push(strFile.path)
     }
   }
 
-  return { brand, device, settingGroups, daySummaries, unreadable }
+  return { brand, device, settingGroups, daySummaries, coveredDates, unreadable }
 }
 
 export interface DigitalDayResult {

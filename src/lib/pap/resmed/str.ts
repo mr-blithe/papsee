@@ -42,6 +42,8 @@ const MAX_PRESSURE = [
   '最大压力',
 ]
 const EPR_LEVEL = ['S.EPR.Level', 'EPR Level', 'EPR-Stufe', 'EPR-niveau', 'Niveau EPR', 'EPR-nivå', 'EPR Düzeyi']
+const MASK_ON = ['MaskOn', 'Mask On']
+const MASK_OFF = ['MaskOff', 'Mask Off']
 
 interface PressureLabels {
   set: string[] | null
@@ -85,19 +87,41 @@ class StrReader {
     return -1
   }
 
-  at(labels: string[], record: number, fallback = 0): number {
-    const index = this.index(labels)
-    if (index < 0) return fallback
-
+  private values(index: number): Float32Array {
     let values = this.cache.get(index)
     if (!values) {
       values = readSignal(this.edf, index)
       this.cache.set(index, values)
     }
 
-    const value = values[record * this.edf.signals[index].samplesPerRecord]
+    return values
+  }
+
+  at(labels: string[], record: number, fallback = 0): number {
+    const index = this.index(labels)
+    if (index < 0) return fallback
+
+    const value = this.values(index)[record * this.edf.signals[index].samplesPerRecord]
     return Number.isFinite(value) ? value : fallback
   }
+
+  samples(labels: string[], record: number): Float32Array | null {
+    const index = this.index(labels)
+    if (index < 0) return null
+
+    const perRecord = this.edf.signals[index].samplesPerRecord
+    const start = record * perRecord
+
+    return this.values(index).subarray(start, start + perRecord)
+  }
+}
+
+function hasMaskUse(reader: StrReader, record: number): boolean {
+  const on = reader.samples(MASK_ON, record)
+  const off = reader.samples(MASK_OFF, record)
+  if (!on || !off) return true
+
+  return on.some((start, slot) => start >= 0 && off[slot] >= 0 && start !== off[slot])
 }
 
 function stat(reader: StrReader, record: number, labels: ReturnType<typeof statLabels>, scale = 1): StatSummary {
@@ -164,21 +188,31 @@ function readSummary(reader: StrReader, record: number): DaySummary {
   }
 }
 
-export function parseStr(buffer: ArrayBuffer, modelNumber: number): CardDaySummary[] {
+export interface StrCalendar {
+  days: CardDaySummary[]
+  coveredDates: string[]
+}
+
+export function parseStr(buffer: ArrayBuffer, modelNumber: number): StrCalendar {
   const edf = parseEdf(buffer)
   const reader = new StrReader(edf)
   const days: CardDaySummary[] = []
+  const coveredDates: string[] = []
 
   for (let record = 0; record < edf.recordCount; record += 1) {
     const noonMs = addDays(edf.startTime, record).getTime()
+    const date = papDayKey(noonMs)
+    coveredDates.push(date)
+
+    if (!hasMaskUse(reader, record)) continue
 
     days.push({
-      date: papDayKey(noonMs),
+      date,
       noonMs,
       summary: readSummary(reader, record),
       settings: readSettings(reader, record, modelNumber),
     })
   }
 
-  return days
+  return { days, coveredDates }
 }
