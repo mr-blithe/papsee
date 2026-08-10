@@ -1,15 +1,14 @@
-import { detectCard, isSupported } from './detect'
-import { papDayKey } from './device-time'
+import { detectCard } from './detect'
+import { papDayKey, papDayNoonMs } from './device-time'
 import { toPapDay, type DigitalDay } from './digital'
-import { buildSessions } from './resmed/datalog'
-import { parseIdentification, parseIdentificationTgt } from './resmed/identification'
-import { parseCurrentSettings } from './resmed/settings'
-import { parseStr } from './resmed/str'
+import { loaderFor, type CardContents } from './loaders'
+import { deriveDaySummary } from './summary'
 import type { CardBrand } from './detect'
-import type { CardDaySummary, DeviceInfo, PapDay, PapFile, PapImport, SettingGroup } from './types'
+import type { CardDaySummary, PapDay, PapFile, PapImport } from './types'
 
 export * from './types'
-export { BRAND_NAMES, RECOGNISED_BRANDS, isSupported, type CardBrand } from './detect'
+export { BRAND_NAMES, RECOGNISED_BRANDS, detectCard, isSupported, type CardBrand } from './detect'
+export { loaderFor, type CardFileHead } from './loaders'
 export { isPapDayKey, papDayDate } from './device-time'
 export { toPapDay, type DigitalDay } from './digital'
 export { assignFilesToDays } from './files'
@@ -28,67 +27,33 @@ export {
 } from './stats'
 export { decimate } from './decimate'
 
-function matches(path: string, name: string): boolean {
-  return path.toLowerCase().endsWith(name.toLowerCase())
+function headOf(file: PapFile, headBytes: number): Uint8Array {
+  return headBytes === 0 ? EMPTY_HEAD : new Uint8Array(file.data, 0, Math.min(headBytes, file.data.byteLength))
 }
 
-function decodeText(data: ArrayBuffer): string {
-  return new TextDecoder('utf-8').decode(data)
+const EMPTY_HEAD = new Uint8Array(0)
+
+const NOTHING_READ: CardContents = {
+  device: null,
+  settingGroups: [],
+  daySummaries: [],
+  coveredDates: [],
+  unreadable: [],
 }
 
-export function isDatalogPath(path: string): boolean {
-  return /(^|\/)DATALOG\//i.test(path) && path.toLowerCase().endsWith('.edf')
-}
-
-export interface CardMetadata {
+export interface CardMetadata extends CardContents {
   brand: CardBrand | null
-  device: DeviceInfo | null
-  settingGroups: SettingGroup[]
-  daySummaries: CardDaySummary[]
-  /** Every date the card holds an STR record for, including the ones with no therapy on them. */
-  coveredDates: string[]
-  unreadable: string[]
 }
 
 /**
- * Everything a card says about itself and about every night on it, from the three card level files
- * alone. A year of STR is a few tens of kilobytes, so this stays cheap however large the card is.
+ * Everything a card says about itself and about every night on it, from its card level files alone. A
+ * year of ResMed summaries is a few tens of kilobytes, so this stays cheap however large the card is.
  */
 export function readCardMetadata(files: PapFile[], cardPaths: string[] = files.map((file) => file.path)): CardMetadata {
-  const unreadable: string[] = []
   const brand = detectCard(cardPaths)
+  const loader = loaderFor(brand)
 
-  if (!isSupported(brand)) {
-    return { brand, device: null, settingGroups: [], daySummaries: [], coveredDates: [], unreadable }
-  }
-
-  const identificationJson = files.find((file) => matches(file.path, 'Identification.json'))
-  const identificationTgt = files.find((file) => matches(file.path, 'Identification.tgt'))
-  const settingsFile = files.find((file) => matches(file.path, 'CurrentSettings.json'))
-  const strFile = files.find((file) => matches(file.path, 'STR.edf'))
-
-  const device = identificationJson
-    ? parseIdentification(decodeText(identificationJson.data))
-    : identificationTgt
-      ? parseIdentificationTgt(decodeText(identificationTgt.data))
-      : null
-  const settingGroups = settingsFile ? parseCurrentSettings(decodeText(settingsFile.data)) : []
-
-  let daySummaries: CardDaySummary[] = []
-  let coveredDates: string[] = []
-  if (strFile) {
-    try {
-      const calendar = parseStr(strFile.data, device?.modelNumber ?? null)
-      daySummaries = calendar.days
-      coveredDates = calendar.coveredDates
-    } catch {
-      unreadable.push(strFile.path)
-    }
-
-    if (!device) unreadable.push(identificationJson?.path ?? identificationTgt?.path ?? 'Identification.json')
-  }
-
-  return { brand, device, settingGroups, daySummaries, coveredDates, unreadable }
+  return loader ? { brand, ...loader.readCard(files) } : { brand, ...NOTHING_READ }
 }
 
 export interface DigitalDayResult {
@@ -101,31 +66,37 @@ export interface DigitalDayResult {
  * it. Scoping the parse to a single night is what keeps a year sized import inside one request.
  */
 export function buildDigitalDay(
+  brand: CardBrand | null,
   date: string,
-  datalogFiles: PapFile[],
+  dayFiles: PapFile[],
   summary: CardDaySummary | null,
 ): DigitalDayResult {
   const unreadable: string[] = []
+  const loader = loaderFor(brand)
   let sessions: DigitalDay['sessions'] = []
 
   try {
-    sessions = buildSessions(datalogFiles)
+    sessions = (loader?.buildSessions(dayFiles) ?? [])
       .filter((session) => papDayKey(session.startMs) === date)
       .sort((a, b) => a.startMs - b.startMs)
   } catch {
-    unreadable.push(`DATALOG/${date}`)
+    unreadable.push(date)
   }
 
   const starts = sessions.map((session) => session.startMs)
   const ends = sessions.map((session) => session.endMs)
 
+  // A card that carries no summary of its own still owes the reader the readings the panel has no
+  // other source for, so they are measured off the night that was just parsed.
+  const noonMs = summary?.noonMs ?? papDayNoonMs(date)
+
   return {
     day: {
       date,
-      startMs: starts.length ? Math.min(...starts) : (summary?.noonMs ?? 0),
-      endMs: ends.length ? Math.max(...ends) : (summary?.noonMs ?? 0),
+      startMs: starts.length ? Math.min(...starts) : noonMs,
+      endMs: ends.length ? Math.max(...ends) : noonMs,
       sessions,
-      summary: summary?.summary ?? null,
+      summary: summary?.summary ?? deriveDaySummary(sessions),
       settings: summary?.settings ?? null,
     },
     unreadable,
@@ -134,42 +105,36 @@ export function buildDigitalDay(
 
 export function importPapData(files: PapFile[], cardPaths: string[] = files.map((file) => file.path)): PapImport {
   const metadata = readCardMetadata(files, cardPaths)
+  const loader = loaderFor(metadata.brand)
 
-  if (!isSupported(metadata.brand)) {
+  if (!loader) {
     return { brand: metadata.brand, device: null, settingGroups: [], days: [], unreadable: metadata.unreadable }
   }
 
-  const datalogFiles = files.filter((file) => isDatalogPath(file.path))
+  const dayFiles = files.filter((file) => !loader.isCardLevel(file.path))
+  const assignment = loader.assignDays(
+    dayFiles.map((file) => ({ path: file.path, head: headOf(file, loader.headBytes) })),
+  )
   const unreadable = [...metadata.unreadable]
-
-  let sessions: DigitalDay['sessions'] = []
-  try {
-    sessions = buildSessions(datalogFiles)
-  } catch {
-    unreadable.push('DATALOG')
-  }
 
   const dates = [
     ...new Set([
-      ...sessions.map((session) => papDayKey(session.startMs)),
+      ...[...assignment.values()].filter((date) => date !== null),
       ...metadata.daySummaries.map((day) => day.date),
     ]),
   ].sort()
 
   const days: PapDay[] = dates.map((date) => {
     const summary = metadata.daySummaries.find((candidate) => candidate.date === date) ?? null
-    const daySessions = sessions.filter((session) => papDayKey(session.startMs) === date)
-    const starts = daySessions.map((session) => session.startMs)
-    const ends = daySessions.map((session) => session.endMs)
-
-    return toPapDay({
+    const built = buildDigitalDay(
+      metadata.brand,
       date,
-      startMs: starts.length ? Math.min(...starts) : (summary?.noonMs ?? 0),
-      endMs: ends.length ? Math.max(...ends) : (summary?.noonMs ?? 0),
-      sessions: daySessions.sort((a, b) => a.startMs - b.startMs),
-      summary: summary?.summary ?? null,
-      settings: summary?.settings ?? null,
-    })
+      dayFiles.filter((file) => assignment.get(file.path) === date),
+      summary,
+    )
+
+    unreadable.push(...built.unreadable)
+    return toPapDay(built.day)
   })
 
   return { brand: metadata.brand, device: metadata.device, settingGroups: metadata.settingGroups, days, unreadable }

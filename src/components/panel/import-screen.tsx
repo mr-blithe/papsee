@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, FolderOpen, Loader2, TriangleAlert } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { BRAND_NAMES, RECOGNISED_BRANDS, isSupported, type CardBrand } from '@/lib/pap'
-import { detectCard } from '@/lib/pap/detect'
 import { loadBrowserFiles, type LoadProgress } from '@/lib/pap/sources'
 import { Button } from '@/components/ui/button'
 import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress'
@@ -102,9 +101,8 @@ export function ImportScreen({ device }: { device: DeviceGuideId | null }) {
       return
     }
 
-    const brand = detectCard(card.paths)
-    if (!isSupported(brand)) {
-      setState({ status: 'unsupported', brand })
+    if (!isSupported(card.brand)) {
+      setState({ status: 'unsupported', brand: card.brand })
       return
     }
 

@@ -6,6 +6,9 @@ export interface EdfSignalSpec {
   digitalMin: number
   digitalMax: number
   samplesPerRecord: number
+  /** The per-signal reserved column. A vendor extension uses it to declare a sample width. */
+  reserved?: string
+  bytesPerSample?: 1 | 2
 }
 
 export interface EdfAnnotationTal {
@@ -62,8 +65,9 @@ function talText(block: EdfAnnotationBlock): string {
 export function buildEdf(spec: EdfSpec): ArrayBuffer {
   const signalCount = spec.signals.length
   const headerBytes = FIXED_HEADER_BYTES * (1 + signalCount)
-  const samplesPerFrame = spec.signals.reduce((total, signal) => total + signal.samplesPerRecord, 0)
-  const buffer = new ArrayBuffer(headerBytes + spec.records.length * samplesPerFrame * 2)
+  const widthOf = (signal: EdfSignalSpec) => signal.bytesPerSample ?? 2
+  const frameBytes = spec.signals.reduce((total, signal) => total + signal.samplesPerRecord * widthOf(signal), 0)
+  const buffer = new ArrayBuffer(headerBytes + spec.records.length * frameBytes)
   const bytes = new Uint8Array(buffer)
   const view = new DataView(buffer)
 
@@ -93,22 +97,27 @@ export function buildEdf(spec: EdfSpec): ArrayBuffer {
   column(8, (signal) => String(signal.digitalMax))
   column(80, () => '')
   column(8, (signal) => String(signal.samplesPerRecord))
-  column(32, () => '')
+  column(32, (signal) => signal.reserved ?? '')
 
   spec.records.forEach((record, recordIndex) => {
-    let sampleOffset = 0
+    let byteOffset = 0
     record.forEach((block, signalIndex) => {
-      const base = headerBytes + (recordIndex * samplesPerFrame + sampleOffset) * 2
+      const signal = spec.signals[signalIndex]
+      const width = widthOf(signal)
+      const base = headerBytes + recordIndex * frameBytes + byteOffset
 
       if (Array.isArray(block)) {
-        block.forEach((sample, sampleIndex) => view.setInt16(base + sampleIndex * 2, sample, true))
+        block.forEach((sample, sampleIndex) => {
+          if (width === 1) view.setInt8(base + sampleIndex, sample)
+          else view.setInt16(base + sampleIndex * 2, sample, true)
+        })
       } else {
-        const byteLength = spec.signals[signalIndex].samplesPerRecord * 2
+        const byteLength = signal.samplesPerRecord * width
         bytes.fill(0, base, base + byteLength)
         bytes.set(encoder.encode(talText(block)).slice(0, byteLength), base)
       }
 
-      sampleOffset += spec.signals[signalIndex].samplesPerRecord
+      byteOffset += signal.samplesPerRecord * width
     })
   })
 

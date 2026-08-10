@@ -1,7 +1,7 @@
 import { CONFIRMATION_HEADER } from '@/lib/account-confirmation'
 import { MAX_REQUEST_BODY_BYTES } from '@/lib/api'
 import type { PapFile, PapImport } from '@/lib/pap'
-import { encodePapBundle } from '@/lib/pap/bundle'
+import { encodePapBundle, type PapFileChunk } from '@/lib/pap/bundle'
 import { decodeDayPayload } from '@/lib/pap/day-payload'
 import type { DayIndexEntry, PatientProfile } from './repository'
 import type { ShareDurationMinutes } from './shares'
@@ -146,22 +146,38 @@ export async function commitUpload(
   }
 }
 
-export function batchForUpload(files: PapFile[], budgetBytes: number): PapFile[][] {
-  const batches: PapFile[][] = []
-  let current: PapFile[] = []
+/**
+ * One request's worth of card at a time. A file that fits is sent whole, as a single chunk at offset
+ * zero; a file larger than one request is cut, because the platform drops an oversize body before the
+ * handler sees it and the server has no way to ask for the rest.
+ */
+export function batchForUpload(files: PapFile[], budgetBytes: number): PapFileChunk[][] {
+  const batches: PapFileChunk[][] = []
+  let current: PapFileChunk[] = []
   let size = 0
 
-  for (const file of files) {
-    if (current.length > 0 && size + file.data.byteLength > budgetBytes) {
-      batches.push(current)
-      current = []
-      size = 0
-    }
-    current.push(file)
-    size += file.data.byteLength
+  const flush = () => {
+    if (current.length === 0) return
+    batches.push(current)
+    current = []
+    size = 0
   }
 
-  if (current.length > 0) batches.push(current)
+  for (const file of files) {
+    if (file.data.byteLength <= budgetBytes) {
+      if (current.length > 0 && size + file.data.byteLength > budgetBytes) flush()
+      current.push({ path: file.path, offset: 0, data: file.data })
+      size += file.data.byteLength
+      continue
+    }
+
+    flush()
+    for (let offset = 0; offset < file.data.byteLength; offset += budgetBytes) {
+      batches.push([{ path: file.path, offset, data: file.data.slice(offset, offset + budgetBytes) }])
+    }
+  }
+
+  flush()
 
   return batches
 }
@@ -182,6 +198,7 @@ export async function uploadCard(
   }
 
   const batches = batchForUpload(files, UPLOAD_BATCH_BUDGET_BYTES)
+  const lengths = new Map(files.map((file) => [file.path, file.data.byteLength]))
   let sent = 0
 
   try {
@@ -192,7 +209,7 @@ export async function uploadCard(
         headers: { 'content-type': 'application/octet-stream' },
         body: body as BodyInit,
       })
-      sent += batch.length
+      sent += batch.filter((chunk) => chunk.offset + chunk.data.byteLength === lengths.get(chunk.path)).length
       onProgress?.({ sent, total: files.length })
     }
 

@@ -67,6 +67,28 @@ function periodicBreathing(...tals: EdfAnnotationTal[]) {
   return session.events.filter((event) => event.type === 'periodicBreathing')
 }
 
+describe('where a scored event sits on the night', () => {
+  function scored(...tals: EdfAnnotationTal[]) {
+    const [session] = buildSessions([waveform(), annotations(...tals)])
+    return session.events
+  }
+
+  it('starts an apnea a duration before the flag, because the device flags it once it has ended', () => {
+    const events = scored({ onset: 100, duration: 20, text: 'Obstructive apnea' })
+
+    expect(events).toHaveLength(1)
+    expect(events[0].startMs).toBe(SESSION_START_MS + 80_000)
+    expect(events[0].durationMs).toBe(20_000)
+  })
+
+  it('leaves a flag with no duration where the device put it, so it cannot drift', () => {
+    const events = scored({ onset: 50, text: 'Hypopnea' })
+
+    expect(events[0].startMs).toBe(SESSION_START_MS + 50_000)
+    expect(events[0].durationMs).toBe(0)
+  })
+})
+
 describe('how long a run of periodic breathing lasted', () => {
   it('measures it from the start and end flags the device wrote around it', () => {
     const events = periodicBreathing({ onset: 10, text: 'CSR Start' }, { onset: 40, text: 'CSR End' })

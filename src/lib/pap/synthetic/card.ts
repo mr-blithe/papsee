@@ -140,7 +140,7 @@ function annotationFile(
           ]
         : [
             {
-              onset: onsetOf(event.startMs),
+              onset: onsetOf(event.startMs + event.durationMs),
               duration: Math.round(event.durationMs / 100) / 10,
               text: EVENT_LABELS[event.type],
             },

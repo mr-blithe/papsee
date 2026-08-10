@@ -80,7 +80,12 @@ function readEvents(file: PapFile, startMs: number): PapEvent[] {
     const type = lookupEventType(annotation.text)
     if (!type) continue
 
-    const event: PapEvent = { type, startMs: atMs, durationMs: annotation.duration * 1000 }
+    const durationMs = annotation.duration * 1000
+    // The device flags an event once it has ended, so the annotation marks the end and the duration
+    // runs back from it. Periodic breathing is the exception: its own start flag is the start.
+    const onsetMs = type === 'periodicBreathing' ? atMs : atMs - durationMs
+
+    const event: PapEvent = { type, startMs: onsetMs, durationMs }
     events.push(event)
     if (type === 'periodicBreathing') openPeriodicBreathing = event
   }

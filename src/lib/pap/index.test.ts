@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { assignFilesToDays, buildDigitalDay, importPapData, isDatalogPath, readCardMetadata, toPapDay } from './index'
+import { assignFilesToDays, buildDigitalDay, importPapData, loaderFor, readCardMetadata, toPapDay } from './index'
 import { writeSyntheticCard } from './synthetic/card'
+
+const RESMED = loaderFor('resmed')!
 
 const SEED = 'papsee-import-test'
 const DATE = '2026-07-14'
@@ -137,14 +139,14 @@ describe('parsing one night at a time instead of the whole card', () => {
 
   function perDay(scopeFiles: boolean) {
     const metadata = readCardMetadata(multiDay)
-    const datalog = multiDay.filter((file) => isDatalogPath(file.path))
+    const datalog = multiDay.filter((file) => !RESMED.isCardLevel(file.path))
     const assignment = assignFilesToDays(datalog.map((file) => file.path))
 
     return DATES.map((date) => {
       const files = scopeFiles ? datalog.filter((file) => assignment.get(file.path) === date) : datalog
       const summary = metadata.daySummaries.find((candidate) => candidate.date === date) ?? null
 
-      return toPapDay(buildDigitalDay(date, files, summary).day)
+      return toPapDay(buildDigitalDay('resmed', date, files, summary).day)
     })
   }
 
@@ -157,7 +159,7 @@ describe('parsing one night at a time instead of the whole card', () => {
   })
 
   it('reads the card metadata without touching a single waveform file', () => {
-    const cardLevel = multiDay.filter((file) => !isDatalogPath(file.path))
+    const cardLevel = multiDay.filter((file) => RESMED.isCardLevel(file.path))
     const metadata = readCardMetadata(
       cardLevel,
       multiDay.map((file) => file.path),
@@ -169,20 +171,21 @@ describe('parsing one night at a time instead of the whole card', () => {
   })
 
   it('loses only the corrupt night, where a whole card parse loses every session on the card', () => {
-    const datalog = multiDay.filter((file) => isDatalogPath(file.path))
+    const datalog = multiDay.filter((file) => !RESMED.isCardLevel(file.path))
     const assignment = assignFilesToDays(datalog.map((file) => file.path))
     const broken = datalog
       .filter((file) => assignment.get(file.path) === DATES[1])
       .map((file) => ({ path: file.path, data: new ArrayBuffer(8) }))
 
-    const damaged = buildDigitalDay(DATES[1], broken, null)
+    const damaged = buildDigitalDay('resmed', DATES[1], broken, null)
     const intact = buildDigitalDay(
+      'resmed',
       DATES[0],
       datalog.filter((file) => assignment.get(file.path) === DATES[0]),
       null,
     )
 
-    expect(damaged.unreadable).toEqual([`DATALOG/${DATES[1]}`])
+    expect(damaged.unreadable).toEqual([DATES[1]])
     expect(damaged.day.sessions).toEqual([])
     expect(intact.unreadable).toEqual([])
     expect(intact.day.sessions.length).toBeGreaterThan(0)
@@ -235,7 +238,7 @@ describe('a card covering nights the machine was never switched on', () => {
 
   it('leaves the unused night out of the summaries the commit writes its day rows from', () => {
     const metadata = readCardMetadata(
-      sparse.filter((file) => !isDatalogPath(file.path)),
+      sparse.filter((file) => RESMED.isCardLevel(file.path)),
       sparse.map((file) => file.path),
     )
 

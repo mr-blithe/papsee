@@ -1,16 +1,8 @@
 import { and, asc, desc, eq, gte, lt, lte, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { papChannel, papDay, papEvent, papFile, papImport, patientProfile, therapyShare } from '@/lib/db/pap-schema'
-import type {
-  CardBrand,
-  ChannelId,
-  DaySettings,
-  DaySummary,
-  DeviceInfo,
-  PapEventType,
-  PapFile,
-  SettingGroup,
-} from '@/lib/pap'
+import type { CardBrand, ChannelId, DaySettings, DaySummary, DeviceInfo, PapEventType, SettingGroup } from '@/lib/pap'
+import type { PapFileChunk } from '@/lib/pap/bundle'
 import type { SessionBounds } from './day-index'
 import { isShareActive, type ShareLink } from './shares'
 
@@ -52,19 +44,59 @@ export async function createImport(userId: string): Promise<string> {
   return row.id
 }
 
-export async function storeImportFiles(userId: string, importId: string, files: PapFile[]): Promise<boolean> {
-  if (!(await findOpenImport(userId, importId))) return false
-  if (files.length === 0) return true
+export type StoreFilesOutcome = 'stored' | 'notOpen' | 'outOfOrder'
 
-  await db
-    .insert(papFile)
-    .values(files.map((file) => ({ userId, importId, path: file.path, bytes: Buffer.from(new Uint8Array(file.data)) })))
-    .onConflictDoUpdate({
-      target: [papFile.importId, papFile.path],
-      set: { bytes: sql`excluded.bytes` },
-    })
+/**
+ * One batch of card bytes. A chunk at offset zero replaces whatever the path held; a later chunk is
+ * appended, and only onto bytes that are exactly as long as the chunk claims to follow. That length
+ * check is what makes the append provable: a duplicated or reordered chunk matches no row instead of
+ * corrupting the file.
+ */
+export async function storeImportFiles(
+  userId: string,
+  importId: string,
+  chunks: PapFileChunk[],
+): Promise<StoreFilesOutcome> {
+  if (!(await findOpenImport(userId, importId))) return 'notOpen'
+  if (chunks.length === 0) return 'stored'
 
-  return true
+  const opening = chunks.filter((chunk) => chunk.offset === 0)
+  const continuations = chunks.filter((chunk) => chunk.offset > 0)
+
+  if (opening.length > 0) {
+    await db
+      .insert(papFile)
+      .values(
+        opening.map((chunk) => ({
+          userId,
+          importId,
+          path: chunk.path,
+          bytes: Buffer.from(new Uint8Array(chunk.data)),
+        })),
+      )
+      .onConflictDoUpdate({
+        target: [papFile.importId, papFile.path],
+        set: { bytes: sql`excluded.bytes` },
+      })
+  }
+
+  for (const chunk of continuations) {
+    const appended = await db
+      .update(papFile)
+      .set({ bytes: sql`${papFile.bytes} || ${Buffer.from(new Uint8Array(chunk.data))}` })
+      .where(
+        and(
+          eq(papFile.importId, importId),
+          eq(papFile.path, chunk.path),
+          sql`octet_length(${papFile.bytes}) = ${chunk.offset}`,
+        ),
+      )
+      .returning({ id: papFile.id })
+
+    if (appended.length === 0) return 'outOfOrder'
+  }
+
+  return 'stored'
 }
 
 export async function deleteImport(userId: string, importId: string): Promise<boolean> {

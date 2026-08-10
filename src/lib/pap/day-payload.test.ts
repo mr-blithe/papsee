@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { decodeDayPayload, encodeDayPayload, PapDayPayloadError, type DayPayloadCard } from './day-payload'
-import { importPapData, isDatalogPath, readCardMetadata, buildDigitalDay } from './index'
+import { importPapData, loaderFor, readCardMetadata, buildDigitalDay } from './index'
 import { assignFilesToDays } from './files'
 import { writeSyntheticCard } from './synthetic/card'
+
+const RESMED = loaderFor('resmed')!
 
 const SEED = 'papsee-day-payload'
 const DATE = '2026-07-14'
@@ -11,7 +13,7 @@ const card = writeSyntheticCard({ seed: SEED, dates: [DATE] })
 
 function encodeNight() {
   const metadata = readCardMetadata(card)
-  const datalog = card.filter((file) => isDatalogPath(file.path))
+  const datalog = card.filter((file) => !RESMED.isCardLevel(file.path))
   const assignment = assignFilesToDays(datalog.map((file) => file.path))
   const files = datalog.filter((file) => assignment.get(file.path) === DATE)
   const summary = metadata.daySummaries.find((candidate) => candidate.date === DATE) ?? null
@@ -22,7 +24,7 @@ function encodeNight() {
     unreadable: metadata.unreadable,
   }
 
-  return encodeDayPayload(info, buildDigitalDay(DATE, files, summary).day)
+  return encodeDayPayload(info, buildDigitalDay('resmed', DATE, files, summary).day)
 }
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {

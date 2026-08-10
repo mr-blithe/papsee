@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { calendarDayKey, deviceTime, deviceTimeAt, isPapDayKey, papDayDate, papDayKey } from './device-time'
+import {
+  calendarDayKey,
+  deviceTime,
+  deviceTimeAt,
+  isPapDayKey,
+  papDayDate,
+  papDayKey,
+  papDayNoonMs,
+} from './device-time'
 
 describe('reading the clock a device wrote', () => {
   it('reads a wall clock the same way wherever the code runs', () => {
@@ -61,6 +69,18 @@ describe('recognising a therapy day key', () => {
 describe('turning a therapy day key back into a date', () => {
   it('lands on the start of that day, so a label cannot slide into the day before', () => {
     expect(papDayDate('2026-08-08').getTime()).toBe(Date.UTC(2026, 7, 8))
+  })
+})
+
+describe('where a therapy day begins', () => {
+  it('anchors it at noon, which is the same instant a card summary calls its own noon', () => {
+    expect(papDayNoonMs('2026-08-08')).toBe(Date.UTC(2026, 7, 8, 12))
+  })
+
+  it('files that anchor under the very day it names, so a night with no sessions cannot slide a day', () => {
+    for (const key of ['2026-01-01', '2026-08-08', '2026-12-31']) {
+      expect(papDayKey(papDayNoonMs(key)), key).toBe(key)
+    }
   })
 })
 

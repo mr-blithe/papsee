@@ -1,4 +1,4 @@
-import { frameOffset, signalIndex, type EdfFile } from './header'
+import { frameByteOffset, signalIndex, type EdfFile } from './header'
 
 export interface EdfAnnotation {
   onset: number
@@ -19,12 +19,12 @@ export function readAnnotations(edf: EdfFile): EdfAnnotation[] {
   if (index < 0) return []
 
   const signal = edf.signals[index]
-  const start = frameOffset(edf, index) * 2
+  const start = frameByteOffset(edf, index)
   const byteLength = signal.samplesPerRecord * 2
   const annotations: EdfAnnotation[] = []
 
   for (let record = 0; record < edf.recordCount; record += 1) {
-    const base = edf.headerBytes + record * edf.samplesPerFrame * 2 + start
+    const base = edf.headerBytes + record * edf.frameBytes + start
     const block = decoder.decode(new Uint8Array(edf.data.buffer, edf.data.byteOffset + base, byteLength))
 
     for (const tal of block.split(TAL_END)) {

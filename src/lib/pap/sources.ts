@@ -1,4 +1,5 @@
-import { isImportable } from './files'
+import { detectCard, type CardBrand } from './detect'
+import { loaderFor } from './loaders'
 import type { PapFile } from './types'
 
 export interface LoadProgress {
@@ -7,10 +8,16 @@ export interface LoadProgress {
 }
 
 export interface PickedCard {
+  brand: CardBrand | null
   files: PapFile[]
   paths: string[]
 }
 
+/**
+ * The card the reader picked, read once. Detection runs on the whole path listing before a single byte
+ * is loaded, so an unreadable card is named without pulling its proprietary records into browser
+ * memory, and each brand decides for itself which of its files are worth uploading.
+ */
 export async function loadBrowserFiles(
   fileList: FileList,
   onProgress?: (progress: LoadProgress) => void,
@@ -20,7 +27,13 @@ export async function loadBrowserFiles(
     path: (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name,
   }))
 
-  const readable = picked.filter((entry) => isImportable(entry.path))
+  const paths = picked.map((entry) => entry.path)
+  const brand = detectCard(paths)
+  const loader = loaderFor(brand)
+
+  if (!loader) return { brand, files: [], paths }
+
+  const readable = picked.filter((entry) => loader.isImportable(entry.path))
   const files: PapFile[] = []
   let loaded = 0
 
@@ -30,5 +43,5 @@ export async function loadBrowserFiles(
     onProgress?.({ loaded, total: readable.length })
   }
 
-  return { files, paths: picked.map((entry) => entry.path) }
+  return { brand, files, paths }
 }

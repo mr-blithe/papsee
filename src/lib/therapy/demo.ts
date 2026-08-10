@@ -82,6 +82,7 @@ export function demoDay(nowMs: number, date: string): { card: DayPayloadCard; da
   const metadata = readCardMetadata(cardLevel)
   const summary = metadata.daySummaries.find((candidate) => candidate.date === date) ?? null
   const built = buildDigitalDay(
+    'resmed',
     date,
     night.filter((file) => assignment.get(file.path) === date),
     summary,

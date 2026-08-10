@@ -28,16 +28,35 @@ describe('splitting a card into upload batches', () => {
     expect(sent.map((entry) => entry.path)).toEqual(files.map((entry) => entry.path))
   })
 
-  it('leaves a file bigger than the budget in a batch of its own rather than dropping it silently', () => {
-    const files = [file('small.json', 10), file('huge.edf', UPLOAD_BATCH_BUDGET_BYTES * 2), file('after.edf', 10)]
+  it('splits a file bigger than the budget, because one device session can outgrow a single request', () => {
+    const files = [file('small.json', 10), file('huge.edf', UPLOAD_BATCH_BUDGET_BYTES * 2 + 5), file('after.edf', 10)]
 
-    const batches = batchForUpload(files, UPLOAD_BATCH_BUDGET_BYTES)
+    for (const batch of batchForUpload(files, UPLOAD_BATCH_BUDGET_BYTES)) {
+      const size = batch.reduce((total, chunk) => total + chunk.data.byteLength, 0)
+      expect(size).toBeLessThanOrEqual(UPLOAD_BATCH_BUDGET_BYTES)
+    }
+  })
 
-    expect(batches.map((batch) => batch.map((entry) => entry.path))).toEqual([
-      ['small.json'],
-      ['huge.edf'],
-      ['after.edf'],
-    ])
+  it('cuts an oversize file into contiguous chunks covering it exactly, because the server appends them blind', () => {
+    const length = UPLOAD_BATCH_BUDGET_BYTES * 2 + 5
+
+    const chunks = batchForUpload([file('huge.edf', length)], UPLOAD_BATCH_BUDGET_BYTES).flat()
+
+    expect(chunks.length).toBeGreaterThan(1)
+    let covered = 0
+    for (const chunk of chunks) {
+      expect(chunk.offset).toBe(covered)
+      covered += chunk.data.byteLength
+    }
+    expect(covered).toBe(length)
+  })
+
+  it('keeps a file that fits whole in one chunk, so an ordinary card never needs an append', () => {
+    const files = [file('small.json', 10), file('str.edf', 900 * KB)]
+
+    const chunks = batchForUpload(files, UPLOAD_BATCH_BUDGET_BYTES).flat()
+
+    expect(chunks.map((chunk) => chunk.offset)).toEqual([0, 0])
   })
 
   it('sends nothing for an empty card instead of an empty request', () => {

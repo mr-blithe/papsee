@@ -47,7 +47,7 @@ function therapyItems(settings: DaySettings, t: Translate) {
     {
       label: t('humidifier'),
       value:
-        settings.humidifierEnabled !== 'On'
+        settings.humidifierEnabled === 'Off'
           ? t('off')
           : settings.humidifierLevel === null
             ? settings.humidifierEnabled

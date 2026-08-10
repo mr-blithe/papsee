@@ -2,19 +2,19 @@ import { and, asc, eq, inArray, isNotNull, isNull, ne, notExists, sql } from 'dr
 import { db } from '@/lib/db'
 import { papChannel, papDay, papEvent, papFile, papImport } from '@/lib/db/pap-schema'
 import {
-  assignFilesToDays,
   buildDigitalDay,
-  isDatalogPath,
-  isSupported,
+  detectCard,
+  loaderFor,
   readCardMetadata,
   toPapDay,
   type CardBrand,
   type CardDaySummary,
+  type CardFileHead,
   type PapFile,
 } from '@/lib/pap'
 import { toDayIndexRow } from './day-index'
 
-const CARD_LEVEL_FILES = ['identification.json', 'identification.tgt', 'currentsettings.json', 'str.edf']
+const EMPTY_HEAD = new Uint8Array(0)
 
 export type CommitProgress =
   | { status: 'progress'; committed: string[]; remaining: number; done: boolean; unreadable: string[] }
@@ -22,17 +22,37 @@ export type CommitProgress =
   | { status: 'empty' }
   | { status: 'notFound' }
 
-function isCardLevel(path: string): boolean {
-  const name = path.split('/').pop()?.toLowerCase() ?? ''
-
-  return CARD_LEVEL_FILES.includes(name)
-}
-
 function toPapFile(row: { path: string; bytes: Buffer }): PapFile {
   return {
     path: row.path,
     data: row.bytes.buffer.slice(row.bytes.byteOffset, row.bytes.byteOffset + row.bytes.byteLength) as ArrayBuffer,
   }
+}
+
+/**
+ * The opening bytes of every file that might belong to a night, in one query rather than one per file,
+ * because this runs before the commit's time budget starts and a card can hold a year of them. A brand
+ * that dates a card from its paths asks for nothing, and then no bytes are read here at all.
+ *
+ * Postgres can only serve `substring` without fetching the whole value when the stored datum is
+ * uncompressed, which sample data usually is because it compresses poorly. That is a saving, not a
+ * guarantee.
+ */
+async function readHeads(
+  userId: string,
+  importId: string,
+  paths: string[],
+  headBytes: number,
+): Promise<CardFileHead[]> {
+  if (headBytes === 0) return paths.map((path) => ({ path, head: EMPTY_HEAD }))
+  if (paths.length === 0) return []
+
+  const rows = await db
+    .select({ path: papFile.path, head: sql<Buffer>`substring(${papFile.bytes} from 1 for ${headBytes})` })
+    .from(papFile)
+    .where(and(eq(papFile.importId, importId), eq(papFile.userId, userId), inArray(papFile.path, paths)))
+
+  return rows.map((row) => ({ path: row.path, head: new Uint8Array(row.head) }))
 }
 
 async function readFiles(userId: string, importId: string, paths: string[]): Promise<PapFile[]> {
@@ -58,9 +78,22 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
     .where(and(eq(papFile.importId, importId), eq(papFile.userId, userId)))
 
   const cardPaths = paths.map((row) => row.path)
-  const cardLevel = await readFiles(userId, importId, cardPaths.filter(isCardLevel))
+  const brand = detectCard(cardPaths)
+  const loader = loaderFor(brand)
+
+  if (!loader) {
+    await db.delete(papImport).where(and(eq(papImport.id, importId), eq(papImport.userId, userId)))
+    return { status: 'unsupported', brand }
+  }
+
+  const cardLevel = await readFiles(
+    userId,
+    importId,
+    cardPaths.filter((path) => loader.isCardLevel(path)),
+  )
   const metadata = readCardMetadata(cardLevel, cardPaths)
-  const assignment = assignFilesToDays(cardPaths.filter(isDatalogPath))
+  const dayPaths = cardPaths.filter((path) => !loader.isCardLevel(path))
+  const assignment = loader.assignDays(await readHeads(userId, importId, dayPaths, loader.headBytes))
 
   const datalogDates = new Set<string>()
   for (const date of assignment.values()) if (date) datalogDates.add(date)
@@ -68,14 +101,12 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
   const dates = [...new Set([...datalogDates, ...metadata.daySummaries.map((day) => day.date)])].sort()
   const replaced = [...new Set([...dates, ...metadata.coveredDates])]
 
-  if (!isSupported(metadata.brand) || dates.length === 0) {
+  if (dates.length === 0) {
     await db.delete(papImport).where(and(eq(papImport.id, importId), eq(papImport.userId, userId)))
 
     // A readable card the patient simply never slept with is not an unreadable card, and telling them
     // the brand is unsupported would be a lie they cannot act on.
-    if (isSupported(metadata.brand)) return { status: 'empty' }
-
-    return { status: 'unsupported', brand: metadata.brand }
+    return { status: 'empty' }
   }
 
   const summaries = new Map(metadata.daySummaries.map((day) => [day.date, day]))
@@ -85,7 +116,7 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
 
     for (const date of dates) {
       const summary = summaries.get(date) ?? null
-      const row = toDayIndexRow(toPapDay(buildDigitalDay(date, [], summary).day))
+      const row = toDayIndexRow(toPapDay(buildDigitalDay(brand, date, [], summary).day))
       const [day] = await tx
         .insert(papDay)
         .values({
@@ -165,6 +196,7 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
 async function fillDay(
   userId: string,
   importId: string,
+  brand: CardBrand | null,
   day: { id: string; date: string },
 ): Promise<{ unreadable: string[] }> {
   const stored = await db
@@ -182,7 +214,7 @@ async function fillDay(
       ? { date: day.date, noonMs: existing.noonMs, summary: existing.summary, settings: existing.settings }
       : null
 
-  const built = buildDigitalDay(day.date, stored.map(toPapFile), summary)
+  const built = buildDigitalDay(brand, day.date, stored.map(toPapFile), summary)
   const parsed = toPapDay(built.day)
   const row = toDayIndexRow(parsed)
 
@@ -198,6 +230,13 @@ async function fillDay(
         cai: row.cai,
         hi: row.hi,
         reraIndex: row.reraIndex,
+        // A card with no summary of its own only learns its readings once the night is parsed, so they
+        // are written here rather than thrown away. Falling back to what is stored keeps this from
+        // nulling a summary the card did carry.
+        summary: built.day.summary ?? existing?.summary ?? null,
+        settings: built.day.settings ?? existing?.settings ?? null,
+        leakP95: row.leakP95,
+        pressureP95: row.pressureP95,
         sessionBounds: row.sessionBounds,
         filledAt: new Date(),
       })
@@ -259,7 +298,7 @@ async function pendingDays(userId: string, importId: string) {
  */
 export async function advanceCommit(userId: string, importId: string, budgetMs: number): Promise<CommitProgress> {
   const [open] = await db
-    .select({ committedAt: papImport.committedAt })
+    .select({ committedAt: papImport.committedAt, brand: papImport.brand })
     .from(papImport)
     .where(and(eq(papImport.id, importId), eq(papImport.userId, userId)))
 
@@ -276,6 +315,10 @@ export async function advanceCommit(userId: string, importId: string, budgetMs: 
     if (opened.status !== 'progress') return opened
   }
 
+  // `beginCommit` is what writes the brand, so it can only be read back once the opening slice has run.
+  const [stamped] = await db.select({ brand: papImport.brand }).from(papImport).where(eq(papImport.id, importId))
+  const brand = stamped?.brand ?? open.brand
+
   const startedAt = Date.now()
   const committed: string[] = []
   const unreadable: string[] = []
@@ -285,7 +328,7 @@ export async function advanceCommit(userId: string, importId: string, budgetMs: 
   let pending = await pendingDays(userId, importId)
   while (pending.length > 0) {
     const day = pending[0]
-    const filled = await fillDay(userId, importId, day)
+    const filled = await fillDay(userId, importId, brand, day)
     committed.push(day.date)
     unreadable.push(...filled.unreadable)
     pending = pending.slice(1)

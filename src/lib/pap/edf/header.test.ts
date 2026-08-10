@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildEdf, type EdfSignalSpec } from './writer'
-import { frameOffset, parseEdf, signalIndex } from './header'
+import { frameByteOffset, parseEdf, signalIndex } from './header'
 
 const FLOW: EdfSignalSpec = {
   label: 'Flow.40ms',
@@ -82,7 +82,7 @@ describe('parseEdf header fields', () => {
     expect(edf.signals.map((signal) => signal.label)).toEqual(['Flow.40ms', 'Press.2s'])
     expect(edf.signals[1].unit).toBe('cmH2O')
     expect(edf.signals[1].physicalMax).toBe(25)
-    expect(edf.samplesPerFrame).toBe(3)
+    expect(edf.frameBytes).toBe(6)
     expect(edf.recordDuration).toBe(2)
   })
 
@@ -144,8 +144,8 @@ describe('signal addressing', () => {
       }),
     )
 
-    expect(frameOffset(edf, 0)).toBe(0)
-    expect(frameOffset(edf, 1)).toBe(FLOW.samplesPerRecord)
+    expect(frameByteOffset(edf, 0)).toBe(0)
+    expect(frameByteOffset(edf, 1)).toBe(FLOW.samplesPerRecord * 2)
   })
 })
 

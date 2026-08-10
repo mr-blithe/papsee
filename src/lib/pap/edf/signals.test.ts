@@ -147,7 +147,7 @@ describe('splitting the read into digital bytes and a scaling', () => {
     }
   })
 
-  it('returns the source bytes unchanged, so a wrong endianness cannot hide behind the scaling', () => {
+  it('returns a two byte signal unchanged, so a wrong endianness cannot hide behind the scaling', () => {
     const edf = card()
     const digital = readDigitalBytes(edf, 0)
     const view = new DataView(digital.buffer, digital.byteOffset, digital.byteLength)

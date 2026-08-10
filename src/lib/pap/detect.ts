@@ -1,5 +1,14 @@
 export type CardBrand =
-  'resmed' | 'philips' | 'fisherPaykel' | 'lowenstein' | 'devilbiss' | 'resvent' | 'bmc' | 'vrem' | 'yuwell'
+  | 'resmed'
+  | 'philips'
+  | 'fisherPaykel'
+  | 'lowensteinPrisma'
+  | 'lowenstein'
+  | 'devilbiss'
+  | 'resvent'
+  | 'bmc'
+  | 'vrem'
+  | 'yuwell'
 
 const SUPPORTED_BRANDS: readonly CardBrand[] = ['resmed']
 
@@ -7,6 +16,7 @@ export const BRAND_NAMES: Record<CardBrand, string> = {
   resmed: 'ResMed',
   philips: 'Philips Respironics',
   fisherPaykel: 'Fisher & Paykel',
+  lowensteinPrisma: 'Löwenstein Prisma',
   lowenstein: 'Löwenstein',
   devilbiss: 'DeVilbiss',
   resvent: 'Resvent',
@@ -93,10 +103,10 @@ const SIGNATURES: BrandSignature[] = [
       hasFile(paths, 'prop.bin'),
   },
   { brand: 'fisherPaykel', matches: (paths) => hasSegment(paths, 'fphcare') },
+  { brand: 'lowensteinPrisma', matches: (paths) => hasFile(paths, 'config.pscfg') },
   {
     brand: 'lowenstein',
-    matches: (paths) =>
-      hasFile(paths, 'config.pscfg') || hasFile(paths, 'config.pcfg') || hasFile(paths, 'wm_data.tdf'),
+    matches: (paths) => hasFile(paths, 'config.pcfg') || hasFile(paths, 'wm_data.tdf'),
   },
   {
     brand: 'devilbiss',

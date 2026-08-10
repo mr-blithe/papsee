@@ -249,11 +249,16 @@ GET    /share/[token]            redeem a link: a route handler under [locale], 
   wrote, but every screen reads the parsed form: `pap_day` for the summary, `pap_event` for the scored events and
   `pap_channel` for the waveforms. Re-parsing EDF on every day open is what made the panel slow, and it also meant
   opening one night re-derived the whole card's `STR.edf`.
-- **A channel is stored the way the device wrote it.** `pap_channel.samples` holds the raw little endian Int16 samples
-  with the one linear mapping (`scale`, `offset`) that turns them into physical units, so what is written and what is
+- **A channel is stored the way the device wrote it.** `pap_channel.samples` holds little endian Int16 samples with the
+  one linear mapping (`scale`, `offset`) that turns them into physical units, so what is written and what is
   read back are identical by construction rather than by two formulas agreeing. `scale` and `offset` are
   `doublePrecision` on purpose: flow's gain is 0.12, which no float32 holds, and rounding it would break that equality.
-  `src/lib/pap/digital.ts` owns the one derivation both sides use.
+  `src/lib/pap/digital.ts` owns the one derivation both sides use. A device that stores a signal in **one** byte is
+  widened to Int16 in `edf/signals.ts`, at parse time and nowhere below it, so the stored form has one shape whatever
+  the card used. That widening is lossless because `signalScaling` reads the declared physical and digital range and
+  never the storage width, and it costs twice the bytes for such a channel. A one byte signal is signed exactly when
+  its declared `digitalMin` is negative; that is the only thing that says so, and reading it unsigned puts every
+  negative sample 256 too high.
 - **`PanelContext` is a three way union, and `view` is what decides everything.** `account`, `demo` or `shared`, in
   `src/lib/panel-context.ts`. A mutating route asks `context.view !== 'account'` and answers with
   `readOnlyErrorCode(context.view)`; a reading route asks `context.view === 'demo'` to decide between the generator and

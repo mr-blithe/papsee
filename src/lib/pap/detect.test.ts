@@ -27,12 +27,18 @@ describe('naming a card we cannot read', () => {
 
   it('names the other brands OSCAR reads', () => {
     expect(detectCard(['FPHCARE/ICON/SLEEPSTYLE/L0001.EDF'])).toBe('fisherPaykel')
-    expect(detectCard(['config.pscfg'])).toBe('lowenstein')
     expect(detectCard(['WM_DATA.TDF'])).toBe('lowenstein')
     expect(detectCard(['SL/SET1'])).toBe('devilbiss')
     expect(detectCard(['DV6/SET.BIN'])).toBe('devilbiss')
     expect(detectCard(['THERAPY/CONFIG/x.dat', 'THERAPY/RECORD/202608/08/1.dat'])).toBe('resvent')
     expect(detectCard(['20260808.usr', '20260808.idx', '20260808.000'])).toBe('bmc')
+  })
+
+  it('tells a Prisma card apart from the older Löwenstein formats, which are read by nothing here', () => {
+    expect(detectCard(['config.pscfg'])).toBe('lowensteinPrisma')
+    expect(detectCard(['CONFIG.PSCFG'])).toBe('lowensteinPrisma')
+    expect(detectCard(['config.pcfg', 'therapy.pdat'])).toBe('lowenstein')
+    expect(detectCard(['WM_DATA.TDF'])).toBe('lowenstein')
   })
 
   it('names a Philips card through the properties file of either DreamStation generation', () => {

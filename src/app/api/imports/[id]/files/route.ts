@@ -17,15 +17,17 @@ export async function POST(request: Request, context: RouteContext<'/api/imports
   const body = await request.arrayBuffer()
   if (body.byteLength > MAX_REQUEST_BODY_BYTES) return apiError('payloadTooLarge')
 
-  let files
+  let chunks
   try {
-    files = decodePapBundle(body)
+    chunks = decodePapBundle(body)
   } catch (error) {
     if (error instanceof PapBundleError) return apiError('invalidRequest')
     throw error
   }
 
-  const stored = await storeImportFiles(panel.userId, id, files)
+  const stored = await storeImportFiles(panel.userId, id, chunks)
+  if (stored === 'notOpen') return apiError('notFound')
+  if (stored === 'outOfOrder') return apiError('invalidRequest')
 
-  return stored ? new Response(null, { status: 204 }) : apiError('notFound')
+  return new Response(null, { status: 204 })
 }

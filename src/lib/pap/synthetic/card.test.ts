@@ -8,6 +8,7 @@ import { writeSyntheticCard } from './card'
 const SEED = 'papsee-example-user'
 const DATE = '2026-07-14'
 const ANNOTATION_TENTH_MS = 100
+const SECOND_MS = 1000
 
 describe('the shape of the card the writer emits', () => {
   const files = writeSyntheticCard({ seed: SEED, dates: [DATE] })
@@ -128,6 +129,32 @@ describe('reading a synthetic card back through the real importer', () => {
     const recovered = card.days[0].sessions.flatMap((session) => session.events)
 
     expect(recovered).toHaveLength(night.events.length)
+  })
+
+  it('puts each event back where the night planted it, because the card flags one at its end', () => {
+    const recovered = card.days[0].sessions
+      .flatMap((session) => session.events)
+      .filter((event) => event.type !== 'periodicBreathing')
+      .sort((a, b) => a.startMs - b.startMs)
+    const planted = night.events
+      .filter((event) => event.type !== 'periodicBreathing')
+      .sort((a, b) => a.startMs - b.startMs)
+
+    expect(recovered).toHaveLength(planted.length)
+    for (const [index, event] of recovered.entries()) {
+      expect(event.type, `event #${index}`).toBe(planted[index].type)
+      // A session is named by a filename clock of whole seconds, and its end and duration are each
+      // written to a tenth of one, so the round trip can only be as sharp as those three together.
+      // Reading the flag as a start rather than an end would be out by the event's own length, which
+      // is tens of seconds.
+      expect(Math.abs(event.startMs - planted[index].startMs), `${event.type} #${index} start`).toBeLessThan(
+        SECOND_MS + ANNOTATION_TENTH_MS,
+      )
+      expect(
+        Math.abs(event.durationMs - planted[index].durationMs),
+        `${event.type} #${index} duration`,
+      ).toBeLessThanOrEqual(ANNOTATION_TENTH_MS)
+    }
   })
 
   it('recovers how long each run of periodic breathing lasted, which the card only writes as two flags', () => {

@@ -1,5 +1,5 @@
 import { UTCDate } from '@date-fns/utc'
-import { format, isValid, parse, subHours } from 'date-fns'
+import { addHours, format, isValid, parse, subHours } from 'date-fns'
 
 const NOON_HOUR = 12
 const DAY_KEY_FORMAT = 'yyyy-MM-dd'
@@ -25,6 +25,14 @@ export function papDayKey(atMs: number): string {
 
 export function papDayDate(key: string): UTCDate {
   return parse(key, DAY_KEY_FORMAT, deviceTimeAt(0))
+}
+
+/**
+ * Where a therapy day begins. A day runs noon to noon and is named after the night it started, so this
+ * is the anchor a night with no sessions is filed at, the same instant a card summary calls its noon.
+ */
+export function papDayNoonMs(key: string): number {
+  return addHours(papDayDate(key), NOON_HOUR).getTime()
 }
 
 /**
