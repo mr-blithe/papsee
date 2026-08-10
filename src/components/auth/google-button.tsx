@@ -41,6 +41,7 @@ export function GoogleButton({
           {
             provider: 'google',
             callbackURL: getPathname({ href: '/panel/therapy', locale }),
+            errorCallbackURL: getPathname({ href: requestSignUp ? '/sign-up' : '/sign-in', locale }),
             requestSignUp: requestSignUp || undefined,
           },
           requestSignUp ? { headers: { [LEGAL_ACCEPTANCE_HEADER]: LEGAL_ACCEPTANCE_VALUE } } : undefined,

@@ -13,10 +13,16 @@ import { trackEvent } from '@/lib/analytics'
 import { signIn } from '@/lib/auth-client'
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, authErrorKey, type AuthErrorMessageKey } from '@/lib/auth-errors'
 
-export function SignInForm({ googleEnabled }: { googleEnabled: boolean }) {
+export function SignInForm({
+  googleEnabled,
+  initialErrorKey = null,
+}: {
+  googleEnabled: boolean
+  initialErrorKey?: AuthErrorMessageKey | null
+}) {
   const t = useTranslations('Auth')
   const router = useRouter()
-  const [errorKey, setErrorKey] = useState<AuthErrorMessageKey | null>(null)
+  const [errorKey, setErrorKey] = useState<AuthErrorMessageKey | null>(initialErrorKey)
   const [pending, setPending] = useState(false)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

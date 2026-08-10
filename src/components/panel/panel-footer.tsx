@@ -1,7 +1,6 @@
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { SOURCE_URL } from '@/lib/site-url'
-import { APP_VERSION } from '@/lib/version'
 
 const LEGAL_LINKS = [
   { href: '/privacy', key: 'privacy' },
@@ -27,7 +26,6 @@ export function PanelFooter() {
               {legal('sourceTitle')}
             </a>
           ) : null}
-          <span>{legal('version', { version: APP_VERSION })}</span>
         </nav>
         <p className="max-w-xl leading-5 sm:text-right">{landing('disclaimer')}</p>
       </div>

@@ -2,7 +2,6 @@ import { useTranslations } from 'next-intl'
 import { Wordmark } from '@/components/logo'
 import { Link } from '@/i18n/navigation'
 import { SOURCE_URL } from '@/lib/site-url'
-import { APP_VERSION } from '@/lib/version'
 
 const LEGAL_LINKS = [
   { href: '/privacy', key: 'privacy' },
@@ -34,7 +33,6 @@ export function SiteFooter() {
               {legal('sourceTitle')}
             </a>
           ) : null}
-          <span>{legal('version', { version: APP_VERSION })}</span>
         </nav>
       </div>
     </footer>

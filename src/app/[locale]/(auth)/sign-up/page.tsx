@@ -4,6 +4,7 @@ import { SignUpForm } from '@/components/auth/sign-up-form'
 import { AuthPageShell } from '@/components/auth/auth-page-shell'
 import type { Locale } from '@/i18n/routing'
 import { isGoogleEnabled, signUpChallenge } from '@/lib/auth'
+import { authErrorKey } from '@/lib/auth-errors'
 import { requireSignedOut } from '@/lib/session'
 
 export async function generateMetadata(props: PageProps<'/[locale]/sign-up'>): Promise<Metadata> {
@@ -13,14 +14,20 @@ export async function generateMetadata(props: PageProps<'/[locale]/sign-up'>): P
   return { title: t('signUpTitle'), description: t('signUpDescription') }
 }
 
-export default async function SignUpPage({ params }: PageProps<'/[locale]/sign-up'>) {
+export default async function SignUpPage({ params, searchParams }: PageProps<'/[locale]/sign-up'>) {
   const { locale } = await params
   setRequestLocale(locale as Locale)
   await requireSignedOut(locale as Locale)
 
+  const { error } = await searchParams
+
   return (
     <AuthPageShell>
-      <SignUpForm googleEnabled={isGoogleEnabled} challenge={signUpChallenge} />
+      <SignUpForm
+        googleEnabled={isGoogleEnabled}
+        challenge={signUpChallenge}
+        initialErrorKey={typeof error === 'string' ? authErrorKey(error) : null}
+      />
     </AuthPageShell>
   )
 }

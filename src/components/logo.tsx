@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { APP_VERSION } from '@/lib/version'
 
 export const LOGO_MARK_PATH = 'M4 13.2c1.9 0 2.1-4.4 3.7-4.4s1.8 6.4 3.4 6.4 1.8-8.4 3.4-8.4 1.6 6.4 3.2 6.4'
 
@@ -30,7 +31,7 @@ export function Wordmark({ className, markClassName }: { className?: string; mar
       <Logo className={cn('text-primary', markClassName)} />
       <span className="text-sm font-semibold tracking-tight">{t('appName')}</span>
       <Badge variant="outline" className="font-normal text-muted-foreground">
-        {t('beta')}
+        {t('beta', { version: APP_VERSION })}
       </Badge>
     </span>
   )

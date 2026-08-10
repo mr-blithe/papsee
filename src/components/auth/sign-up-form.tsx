@@ -20,13 +20,15 @@ const CAPTCHA_HEADER = 'x-captcha-response'
 export function SignUpForm({
   googleEnabled,
   challenge,
+  initialErrorKey = null,
 }: {
   googleEnabled: boolean
   challenge: { siteKey: string; action: string } | null
+  initialErrorKey?: AuthErrorMessageKey | null
 }) {
   const t = useTranslations('Auth')
   const router = useRouter()
-  const [errorKey, setErrorKey] = useState<AuthErrorMessageKey | null>(null)
+  const [errorKey, setErrorKey] = useState<AuthErrorMessageKey | null>(initialErrorKey)
   const [mismatch, setMismatch] = useState(false)
   const [legalAccepted, setLegalAccepted] = useState(false)
   const [legalMissing, setLegalMissing] = useState(false)

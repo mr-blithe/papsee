@@ -1,7 +1,7 @@
 {
   "Metadata": {
     "appName": "PapSee",
-    "beta": "Beta",
+    "beta": "v{version} Beta",
     "appDescription": "PAP tedavinizin her gecesini ayrıntılı olarak inceleyin.",
     "therapyTitle": "Günlük veriler",
     "therapyDescription": "Her geceye ait PAP tedavisi verileriniz."
@@ -113,6 +113,8 @@
     "errorChallengeFailed": "Güvenlik kontrolü geçilemedi. Yeniden deneyin.",
     "legalAcceptance": "<privacy>Gizlilik politikasını</privacy> ve <terms>Kullanım koşullarını</terms> okudum ve kabul ediyorum.",
     "errorLegalAcceptanceRequired": "Hesap oluşturmak için Gizlilik politikasını ve Kullanım koşullarını kabul edin.",
+    "errorGoogleNoAccount": "Bu Google hesabına bağlı bir PapSee hesabı yok. Önce hesap oluşturun, sonrasında Google ile giriş yapabilirsiniz.",
+    "errorGoogleNoEmail": "Google bir e-posta adresi paylaşmadı, dolayısıyla hesabı tanımlayacak bir bilgi yok. Bunun yerine e-posta ve parola kullanın.",
     "errorUnknown": "Bir sorun oluştu. Yeniden deneyin.",
     "passwordConfirmation": "Parolayı yeniden girin",
     "errorPasswordMismatch": "Girdiğiniz parolalar eşleşmiyor.",
@@ -624,7 +626,6 @@
     "contactTitle": "İletişim",
     "contactIntro": "Hesabınız, verileriniz veya hatalı gördüğünüz bir konu için bize ulaşabilirsiniz.",
     "sourceTitle": "Kaynak kodu",
-    "version": "v{version}",
     "pending": "Bu sayfa henüz yazılıyor. PapSee beta sürecinden çıkmadan önce yayımlanacak."
   }
 }

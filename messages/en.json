@@ -1,7 +1,7 @@
 {
   "Metadata": {
     "appName": "PapSee",
-    "beta": "Beta",
+    "beta": "v{version} Beta",
     "appDescription": "See every night of your PAP therapy in detail.",
     "therapyTitle": "Daily therapy data",
     "therapyDescription": "Your nightly PAP therapy data, night after night."
@@ -113,6 +113,8 @@
     "errorChallengeFailed": "The security check did not pass. Try again.",
     "legalAcceptance": "I have read and agree to the <privacy>Privacy policy</privacy> and <terms>Terms of service</terms>.",
     "errorLegalAcceptanceRequired": "Accept the Privacy policy and Terms of service to create an account.",
+    "errorGoogleNoAccount": "That Google account has no PapSee account yet. Create one, and Google will sign you in from then on.",
+    "errorGoogleNoEmail": "Google did not share an email address, so there is nothing to identify the account by. Use an email and password instead.",
     "errorUnknown": "Something went wrong. Try again.",
     "passwordConfirmation": "Confirm password",
     "errorPasswordMismatch": "The two passwords do not match.",
@@ -624,7 +626,6 @@
     "contactTitle": "Contact",
     "contactIntro": "Reach us about your account, your data, or something that looks wrong.",
     "sourceTitle": "Source code",
-    "version": "v{version}",
     "pending": "This page is still being written. It will be published before PapSee leaves beta."
   }
 }
