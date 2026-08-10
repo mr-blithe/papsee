@@ -59,11 +59,12 @@
     "stepReadBody": "Önce özeti okuyun, ardından sinyallere, olaylara, seanslara ve ayarlara ilerleyin.",
     "stepReturnTitle": "Trende yeniden bakın",
     "stepReturnBody": "Giriş yaptığınız her cihazdan tedavinizin haftalar ve aylar içindeki seyrini izleyin.",
+    "sourceLabel": "GitHub'da PapSee",
     "coverageEyebrow": "Cihaz kapsamı",
     "coverageTitle": "Neleri okuyabildiği konusunda açık.",
-    "coverageBody": "PapSee bugün ResMed kartlarını okuyor. Gerçek bir AirSense 11 kartıyla doğrulandı; AirSense 10, AirCurve ve S9 biçimleri ise uygulandı ve sentetik kartlarla test edildi. Diğer markalar en azından adıyla tanınıyor, böylece okunamayan bir kart hiçbir zaman boş bir gece sanılmıyor.",
+    "coverageBody": "PapSee bugün ResMed ve Löwenstein prisma kartlarını okuyor. Gerçek bir AirSense 11 kartıyla doğrulandı; diğer ResMed biçimleri ile Löwenstein prisma biçimi uygulandı ve sentetik kartlarla test edildi. Diğer markalar en azından adıyla tanınıyor, böylece okunamayan bir kart hiçbir zaman boş bir gece sanılmıyor.",
     "sourceEyebrow": "Açık kaynak",
-    "sourceTitle": "Kaynak kodlarını inceleyin, kendi sunucunuzda barındırın.",
+    "sourceTitle": "Kaynak kodlarını inceleyin, kendi bilgisayarınızda barındırın.",
     "sourceBody": "PapSee, AGPL ile yayımlanan özgür bir yazılımdır. İçe aktardığınız bir geceye tam olarak ne olduğunu okuyabilir, hatalı görünen bir sayıyı bildirebilir veya uygulamanın tamamını kendiniz barındırarak tedavi verilerinizin denetlediğiniz bir bilgisayardan hiç çıkmamasını sağlayabilirsiniz.",
     "sourceCta": "GitHub'da yıldız verin",
     "closingTitle": "Gecelerinizi okunabilir bir geçmişe dönüştürün.",
@@ -449,6 +450,7 @@
     "resmedAirSense10": "ResMed AirSense 10",
     "resmedAirCurve": "ResMed AirCurve 10 veya 11",
     "resmedS9": "ResMed S9",
+    "lowensteinPrismaSmart": "Löwenstein prisma SMART veya SOFT",
     "other": "Diğer cihaz",
     "coverageVerified": "Doğrulandı",
     "coverageRead": "Destekleniyor"
@@ -527,6 +529,7 @@
     "card_resmedAirSense10": "Cihazın yan tarafındaki SD kart kapağını açın. Kartı serbest bırakmak için içeri doğru bastırın ve ardından dışarı çekin.",
     "card_resmedAirCurve": "Cihazın yan tarafındaki SD kart kapağını açın. Kartı serbest bırakmak için içeri doğru bastırın ve ardından dışarı çekin.",
     "card_resmedS9": "Cihazın yan tarafındaki kart kapağını açın. Kartı serbest bırakmak için içeri doğru bastırın ve ardından dışarı çekin.",
+    "card_lowensteinPrismaSmart": "SD kartı kısaca içeri bastırıp bırakın, sonra dışarı çekin. Ekrandaki kart simgesi yanıp sönerken kartı çıkarmayın.",
     "card_other": "Kartı cihazınızdan çıkarın. Kart yuvasının yeri ve kartın nasıl çıkarılacağı için cihazınızın kullanım kılavuzuna bakın.",
     "stepReader": "Kartı bilgisayarınızdaki bir kart okuyucuya takın.",
     "stepChooseFolder": "Aşağıdaki düğmeyle kartı seçin. Kartı içeren üst klasörü değil, doğrudan kartı seçin.",
@@ -542,7 +545,8 @@
     "failedTitle": "İşlem tamamlanamadı",
     "supportTitle": "Cihaz desteği",
     "supportDescription": "Mevcut cihaz desteği.",
-    "supportedDevices": "ResMed kartları okunuyor. Diğerleri en azından adıyla tanınıyor; böylece PapSee size boş bir gece göstermek yerine kartı okuyamadığını söylüyor.",
+    "supportedDevices": "ResMed ve Löwenstein prisma kartları okunuyor. Diğerleri en azından adıyla tanınıyor; böylece PapSee size boş bir gece göstermek yerine kartı okuyamadığını söylüyor.",
+    "unverifiedBrand": "PapSee {brand} kartlarını okuyor, ancak bu markadan gerçek bir kart henüz incelenmedi. Buradaki bir değer size yanlış görünüyorsa lütfen bize bildirin.",
     "changeDevice": "Cihazı değiştir",
     "committing": "Geceleriniz hazırlanıyor",
     "committingProgress": "Geceleriniz hazırlanıyor, {total} geceden {committed} tanesi",
@@ -552,7 +556,7 @@
     "coverageRead": "Okunuyor, henüz gerçek bir kartla doğrulanmadı",
     "coverageRecognised": "Tanınıyor, henüz okunmuyor",
     "coverageVerifiedDevices": "ResMed AirSense 11",
-    "coverageReadDevices": "ResMed AirSense 10, AirCurve 10 ve 11, S9"
+    "coverageReadDevices": "ResMed AirSense 10, AirCurve 10 ve 11, S9; Löwenstein prisma SMART ve SOFT"
   },
   "Overview": {
     "title": "Genel bakış",
@@ -676,6 +680,8 @@
     "responseBody": "Mesajınız PapSee yöneticisine iletilir. Yanıt gerektiğinde belirttiğiniz e-posta adresine dönüş yapılır.",
     "privacyTitle": "Mesajınızdaki bilgiler",
     "privacyBody": "Yalnızca talebinizi açıklamak için gereken bilgileri gönderin. İletişim mesajları gizlilik politikasında açıklandığı şekilde işlenir.",
+    "issueTitle": "Sorunu herkese açık bildirin",
+    "issueBody": "Bir grafikte, bir değerde veya içe aktarmada sorun mu var? Bunun yerine <link>GitHub'da issue açabilirsiniz</link>. Herkese açık bir kayıt, diğer okuyucuların bulması ve katkı vermesi için daha kolaydır.",
     "medicalTitle": "Tıbbi sorular",
     "medicalBody": "PapSee tıbbi tavsi veya acil yardım sunamaz. Gerektiğinde yetkin bir sağlık çalışanına ya da yerel acil yardım hizmetlerine başvurun."
   },

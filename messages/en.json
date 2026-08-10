@@ -59,9 +59,10 @@
     "stepReadBody": "Read the summary first, then move into signals, events, sessions and settings.",
     "stepReturnTitle": "Come back to the pattern",
     "stepReturnBody": "Follow your therapy across weeks and months from any device where you sign in.",
+    "sourceLabel": "PapSee on GitHub",
     "coverageEyebrow": "Device coverage",
     "coverageTitle": "Honest about what it can read.",
-    "coverageBody": "PapSee reads ResMed cards today. It is verified against a real AirSense 11 card, and the AirSense 10, AirCurve and S9 formats are implemented and tested against synthetic cards. Other brands are recognised by name so an unreadable card is never mistaken for an empty night.",
+    "coverageBody": "PapSee reads ResMed and Löwenstein prisma cards today. It is verified against a real AirSense 11 card, and the other ResMed formats and the Löwenstein prisma format are implemented and tested against synthetic cards. Other brands are recognised by name so an unreadable card is never mistaken for an empty night.",
     "sourceEyebrow": "Open source",
     "sourceTitle": "Read the code, or self host it on your own computer.",
     "sourceBody": "PapSee is free software under the AGPL. You can read exactly what happens to a night you import, report a number that looks wrong, or self host the whole thing so your therapy data never leaves a computer you control.",
@@ -449,6 +450,7 @@
     "resmedAirSense10": "ResMed AirSense 10",
     "resmedAirCurve": "ResMed AirCurve 10 or 11",
     "resmedS9": "ResMed S9",
+    "lowensteinPrismaSmart": "Löwenstein prisma SMART or SOFT",
     "other": "Another device",
     "coverageVerified": "Verified",
     "coverageRead": "Supported"
@@ -527,6 +529,7 @@
     "card_resmedAirSense10": "Open the SD card cover on the side of the device, then push the card in to release it and pull it out.",
     "card_resmedAirCurve": "Open the SD card cover on the side of the device, then push the card in to release it and pull it out.",
     "card_resmedS9": "Open the card cover on the side of the device, then push the card in to release it and pull it out.",
+    "card_lowensteinPrismaSmart": "Press the SD card in briefly to release it, then pull it out. Do not remove it while the card symbol on the display is flashing.",
     "card_other": "Take the card out of your device. Your own user guide says where the slot is and how it releases.",
     "stepReader": "Put the card into a card reader on your computer.",
     "stepChooseFolder": "Choose the card below. Pick the card itself, not a folder above it.",
@@ -542,7 +545,8 @@
     "failedTitle": "That did not go through",
     "supportTitle": "What can be read",
     "supportDescription": "Current device support.",
-    "supportedDevices": "ResMed cards are read. Everything else is recognised by name, so PapSee tells you it cannot read a card instead of showing you an empty night.",
+    "supportedDevices": "ResMed and Löwenstein prisma cards are read. Everything else is recognised by name, so PapSee tells you it cannot read a card instead of showing you an empty night.",
+    "unverifiedBrand": "PapSee reads {brand} cards, but no real card from that brand has been checked yet. If a number here looks wrong, please tell us.",
     "changeDevice": "Change your device",
     "committing": "Preparing your nights",
     "committingProgress": "Preparing your nights, {committed} of {total}",
@@ -552,7 +556,7 @@
     "coverageRead": "Read, not yet checked against a real card",
     "coverageRecognised": "Recognised, not read yet",
     "coverageVerifiedDevices": "ResMed AirSense 11",
-    "coverageReadDevices": "ResMed AirSense 10, AirCurve 10 and 11, S9"
+    "coverageReadDevices": "ResMed AirSense 10, AirCurve 10 and 11, S9; Löwenstein prisma SMART and SOFT"
   },
   "Overview": {
     "title": "Overview",
@@ -676,6 +680,8 @@
     "responseBody": "Your message is delivered to the PapSee administrator. We will reply to the email address you provide when a response is needed.",
     "privacyTitle": "Your message",
     "privacyBody": "Only send the information needed to explain your request. Contact messages are handled as described in the privacy policy.",
+    "issueTitle": "Report a problem publicly",
+    "issueBody": "Something wrong with a chart, a number or an import? You can <link>open an issue on GitHub</link> instead. A public issue is easier for other readers to find and to add to.",
     "medicalTitle": "Medical questions",
     "medicalBody": "PapSee cannot provide medical advice or emergency support. Contact a qualified healthcare professional or local emergency services when appropriate."
   },

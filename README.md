@@ -48,22 +48,23 @@ you find something wrong, saying so is the most useful thing you can do with it.
 
 The word "support" is doing too much work in most tools, so here it is split three ways.
 
-| Level                    | Devices                                                                                 | What it means                                                                                    |
-| ------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Verified**             | ResMed AirSense 11                                                                      | Read back from a real card of that family, front to back                                         |
-| **Supported**            | ResMed AirSense 10, AirCurve 10 and 11, ResMed S9                                       | The format is implemented and tested against synthetic cards, but no real card has been seen yet |
-| **Recognised, not read** | Philips Respironics, Fisher & Paykel, Löwenstein, DeVilbiss, Resvent, BMC, vREM, Yuwell | PapSee names the card and tells you it cannot read it, rather than showing you an empty night    |
+| Level                    | Devices                                                                                                       | What it means                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Verified**             | ResMed AirSense 11                                                                                            | Read back from a real card of that family, front to back                                         |
+| **Supported**            | ResMed AirSense 10, AirCurve 10 and 11, ResMed S9, Löwenstein prisma SMART and SOFT                           | The format is implemented and tested against synthetic cards, but no real card has been seen yet |
+| **Recognised, not read** | Philips Respironics, Fisher & Paykel, Löwenstein prisma LINE, Weinmann, DeVilbiss, Resvent, BMC, vREM, Yuwell | PapSee names the card and tells you it cannot read it, rather than showing you an empty night    |
 
 Bilevel, ASV and iVAPS modes import, but PapSee's stored shape cannot represent all of their settings yet, so treat
 those as partial whatever the family.
 
 If your machine is in the third row and you would be willing to share a card, that is the single thing that would
-move it up. Every brand after ResMed is blocked on real bytes, not on effort.
+move it up. Every brand is blocked on real bytes, not on effort: the Löwenstein prisma reader was written from the format and
+from OSCAR's source, and has never met a real prisma card.
 
 ## Roadmap
 
-- More PAP device support, in rough order of how cheap and how wanted each is: Löwenstein Prisma, Philips
-  Respironics, BMC (also sold as React Health Luna and Respirox).
+- More PAP device support, in rough order of how cheap and how wanted each is: Philips Respironics, BMC (also sold
+  as React Health Luna and Respirox), Fisher & Paykel SleepStyle.
 - Mobile app
 - Syncing health data from Apple Health, Samsung Health
 - AI integration with MCP servers

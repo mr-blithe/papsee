@@ -2,7 +2,7 @@ import { assignFilesToDays, buildDigitalDay, importPapData, readCardMetadata } f
 import type { DayPayloadCard } from '@/lib/pap/day-payload'
 import type { DigitalDay } from '@/lib/pap/digital'
 import { papDayKey } from '@/lib/pap/device-time'
-import { writeSyntheticCard } from '@/lib/pap/synthetic/card'
+import { writeSyntheticCard } from '@/lib/pap/synthetic/resmed-card'
 import { toDayIndexRow } from './day-index'
 import type { DayIndexEntry, ExportedDay, PatientProfile } from './repository'
 

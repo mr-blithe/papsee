@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { assignFilesToDays, buildDigitalDay, importPapData, loaderFor, readCardMetadata, toPapDay } from './index'
-import { writeSyntheticCard } from './synthetic/card'
+import { writeSyntheticCard } from './synthetic/resmed-card'
 
 const RESMED = loaderFor('resmed')!
 

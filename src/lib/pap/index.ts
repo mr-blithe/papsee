@@ -97,7 +97,7 @@ export function buildDigitalDay(
       endMs: ends.length ? Math.max(...ends) : noonMs,
       sessions,
       summary: summary?.summary ?? deriveDaySummary(sessions),
-      settings: summary?.settings ?? null,
+      settings: summary?.settings ?? loader?.readDaySettings?.(dayFiles) ?? null,
     },
     unreadable,
   }

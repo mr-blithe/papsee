@@ -1,3 +1,4 @@
+import { SiGithub } from '@icons-pack/react-simple-icons'
 import { getTranslations } from 'next-intl/server'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { Wordmark } from '@/components/logo'
@@ -5,6 +6,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { getSession } from '@/lib/session'
+import { SOURCE_URL } from '@/lib/site-url'
 
 export async function SiteHeader() {
   const landing = await getTranslations('Landing')
@@ -34,6 +36,18 @@ export async function SiteHeader() {
               session ? <Link href="/panel">{landing('panel')}</Link> : <Link href="/sign-in">{landing('signIn')}</Link>
             }
           />
+          {SOURCE_URL ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              nativeButton={false}
+              render={
+                <a href={SOURCE_URL} target="_blank" rel="noreferrer" aria-label={landing('sourceLabel')}>
+                  <SiGithub aria-hidden />
+                </a>
+              }
+            />
+          ) : null}
           <LanguageSwitcher />
           <ThemeToggle />
         </div>

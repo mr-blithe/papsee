@@ -3,21 +3,23 @@ export type CardBrand =
   | 'philips'
   | 'fisherPaykel'
   | 'lowensteinPrisma'
-  | 'lowenstein'
+  | 'lowensteinPrismaLine'
+  | 'weinmann'
   | 'devilbiss'
   | 'resvent'
   | 'bmc'
   | 'vrem'
   | 'yuwell'
 
-const SUPPORTED_BRANDS: readonly CardBrand[] = ['resmed']
+const SUPPORTED_BRANDS: readonly CardBrand[] = ['resmed', 'lowensteinPrisma']
 
 export const BRAND_NAMES: Record<CardBrand, string> = {
   resmed: 'ResMed',
   philips: 'Philips Respironics',
   fisherPaykel: 'Fisher & Paykel',
-  lowensteinPrisma: 'Löwenstein Prisma',
-  lowenstein: 'Löwenstein',
+  lowensteinPrisma: 'Löwenstein prisma',
+  lowensteinPrismaLine: 'Löwenstein prisma LINE',
+  weinmann: 'Weinmann',
   devilbiss: 'DeVilbiss',
   resvent: 'Resvent',
   bmc: 'BMC',
@@ -104,10 +106,8 @@ const SIGNATURES: BrandSignature[] = [
   },
   { brand: 'fisherPaykel', matches: (paths) => hasSegment(paths, 'fphcare') },
   { brand: 'lowensteinPrisma', matches: (paths) => hasFile(paths, 'config.pscfg') },
-  {
-    brand: 'lowenstein',
-    matches: (paths) => hasFile(paths, 'config.pcfg') || hasFile(paths, 'wm_data.tdf'),
-  },
+  { brand: 'lowensteinPrismaLine', matches: (paths) => hasFile(paths, 'config.pcfg') },
+  { brand: 'weinmann', matches: (paths) => hasFile(paths, 'wm_data.tdf') },
   {
     brand: 'devilbiss',
     matches: (paths) => paths.some((path) => /(^|\/)sl\/set1$/i.test(path) || /(^|\/)dv6\/set\.bin$/i.test(path)),

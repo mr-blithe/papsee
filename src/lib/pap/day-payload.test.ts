@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { decodeDayPayload, encodeDayPayload, PapDayPayloadError, type DayPayloadCard } from './day-payload'
 import { importPapData, loaderFor, readCardMetadata, buildDigitalDay } from './index'
 import { assignFilesToDays } from './files'
-import { writeSyntheticCard } from './synthetic/card'
+import { writeSyntheticCard } from './synthetic/resmed-card'
 
 const RESMED = loaderFor('resmed')!
 

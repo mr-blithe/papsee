@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { detectCard, isSupported } from './detect'
+import { BRAND_NAMES, detectCard, isSupported, RECOGNISED_BRANDS } from './detect'
 
 describe('recognising a ResMed card', () => {
   it('recognises the card layout the device actually writes', () => {
@@ -27,18 +27,28 @@ describe('naming a card we cannot read', () => {
 
   it('names the other brands OSCAR reads', () => {
     expect(detectCard(['FPHCARE/ICON/SLEEPSTYLE/L0001.EDF'])).toBe('fisherPaykel')
-    expect(detectCard(['WM_DATA.TDF'])).toBe('lowenstein')
+    expect(detectCard(['WM_DATA.TDF'])).toBe('weinmann')
     expect(detectCard(['SL/SET1'])).toBe('devilbiss')
     expect(detectCard(['DV6/SET.BIN'])).toBe('devilbiss')
     expect(detectCard(['THERAPY/CONFIG/x.dat', 'THERAPY/RECORD/202608/08/1.dat'])).toBe('resvent')
     expect(detectCard(['20260808.usr', '20260808.idx', '20260808.000'])).toBe('bmc')
   })
 
-  it('tells a Prisma card apart from the older Löwenstein formats, which are read by nothing here', () => {
+  it('names each Löwenstein format on its own, because only the prisma SMART and SOFT one is read', () => {
     expect(detectCard(['config.pscfg'])).toBe('lowensteinPrisma')
     expect(detectCard(['CONFIG.PSCFG'])).toBe('lowensteinPrisma')
-    expect(detectCard(['config.pcfg', 'therapy.pdat'])).toBe('lowenstein')
-    expect(detectCard(['WM_DATA.TDF'])).toBe('lowenstein')
+    expect(detectCard(['config.pcfg', 'therapy.pdat'])).toBe('lowensteinPrismaLine')
+    expect(detectCard(['WM_DATA.TDF'])).toBe('weinmann')
+  })
+
+  it('never names a readable brand in the list of brands it cannot read', () => {
+    const unreadable = RECOGNISED_BRANDS.map((brand) => BRAND_NAMES[brand])
+
+    // The two lists sit next to each other on the landing and import screens, so one name in both
+    // tells a reader their card is supported and unsupported at once.
+    for (const brand of RECOGNISED_BRANDS) expect(isSupported(brand), brand).toBe(false)
+    expect(unreadable).not.toContain(BRAND_NAMES.lowensteinPrisma)
+    expect(unreadable).not.toContain(BRAND_NAMES.resmed)
   })
 
   it('names a Philips card through the properties file of either DreamStation generation', () => {
@@ -105,8 +115,11 @@ describe('a folder that is not a card at all', () => {
 })
 
 describe('what the panel is allowed to import', () => {
-  it('supports ResMed and nothing else yet', () => {
+  it('supports the brands that have a reader, and refuses the rest', () => {
     expect(isSupported('resmed')).toBe(true)
+    expect(isSupported('lowensteinPrisma')).toBe(true)
+    expect(isSupported('lowensteinPrismaLine')).toBe(false)
+    expect(isSupported('weinmann')).toBe(false)
     expect(isSupported('philips')).toBe(false)
     expect(isSupported(null)).toBe(false)
   })

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, lt, lte, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, isNotNull, lt, lte, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { papChannel, papDay, papEvent, papFile, papImport, patientProfile, therapyShare } from '@/lib/db/pap-schema'
 import type { CardBrand, ChannelId, DaySettings, DaySummary, DeviceInfo, PapEventType, SettingGroup } from '@/lib/pap'
@@ -126,7 +126,15 @@ export async function listDays(userId: string, from: string | null, to: string |
     })
     .from(papDay)
     .where(
-      and(eq(papDay.userId, userId), from ? gte(papDay.date, from) : undefined, to ? lte(papDay.date, to) : undefined),
+      and(
+        eq(papDay.userId, userId),
+        // A night is seeded before it is parsed. For a card with no summary of its own that row is an
+        // epoch dated blank until `fillDay` reaches it, so an abandoned or in-flight commit would put a
+        // strip of 1970 nights in front of the reader, and in front of anyone holding a share link.
+        isNotNull(papDay.filledAt),
+        from ? gte(papDay.date, from) : undefined,
+        to ? lte(papDay.date, to) : undefined,
+      ),
     )
     .orderBy(asc(papDay.date))
 

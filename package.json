@@ -29,6 +29,7 @@
     "@base-ui/react": "^1.7.0",
     "@better-auth/drizzle-adapter": "1.6.26",
     "@date-fns/utc": "2.1.1",
+    "@icons-pack/react-simple-icons": "13.13.0",
     "better-auth": "1.6.26",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

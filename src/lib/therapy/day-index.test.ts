@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { allEvents, eventIndices, importPapData, truncateToTenth } from '@/lib/pap'
-import { writeSyntheticCard } from '@/lib/pap/synthetic/card'
+import { writeSyntheticCard } from '@/lib/pap/synthetic/resmed-card'
 import type { PapDay, PapEvent, PapSession } from '@/lib/pap'
 import { toDayIndexRow } from './day-index'
 

@@ -1,7 +1,8 @@
+import { lowensteinPrismaLoader } from './lowenstein/loader'
 import { resmedLoader } from './resmed/loader'
 import type { CardBrand } from './detect'
 import type { DigitalSession } from './digital'
-import type { CardDaySummary, DeviceInfo, PapFile, SettingGroup } from './types'
+import type { CardDaySummary, DaySettings, DeviceInfo, PapFile, SettingGroup } from './types'
 
 /** Everything a card says about itself and about every night on it, from its card level files alone. */
 export interface CardContents {
@@ -36,13 +37,21 @@ export interface CardLoader {
    */
   assignDays(entries: CardFileHead[]): Map<string, string | null>
   buildSessions(files: PapFile[]): DigitalSession[]
+  /**
+   * The settings the device was running that night, for a brand that writes them per session rather
+   * than once for the card. A brand whose card carries them leaves this out.
+   */
+  readDaySettings?(files: PapFile[]): DaySettings | null
 }
 
 /**
  * The brands that can be read, and the one thing each of them is. A brand with no entry here is
  * detected and refused rather than parsed by somebody else's reader.
  */
-export const CARD_LOADERS: Partial<Record<CardBrand, CardLoader>> = { resmed: resmedLoader }
+export const CARD_LOADERS: Partial<Record<CardBrand, CardLoader>> = {
+  resmed: resmedLoader,
+  lowensteinPrisma: lowensteinPrismaLoader,
+}
 
 export function loaderFor(brand: CardBrand | null): CardLoader | null {
   return brand === null ? null : (CARD_LOADERS[brand] ?? null)

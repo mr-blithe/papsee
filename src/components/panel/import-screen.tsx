@@ -11,7 +11,7 @@ import { Link, useRouter } from '@/i18n/navigation'
 import { trackEvent } from '@/lib/analytics'
 import { apiErrorKey, type ApiErrorMessageKey } from '@/lib/api'
 import { uploadCard, type CommitProgress, type UploadProgress } from '@/lib/therapy/client'
-import type { DeviceGuideId } from '@/lib/therapy/device-guides'
+import { BRAND_COVERAGE, type DeviceGuideId } from '@/lib/therapy/device-guides'
 import { PanelCard, PanelCardHeader } from './panel-card'
 
 type ImportState =
@@ -42,6 +42,7 @@ export function ImportScreen({ device }: { device: DeviceGuideId | null }) {
   const router = useRouter()
 
   const [state, setState] = useState<ImportState>({ status: 'idle' })
+  const [readBrand, setReadBrand] = useState<CardBrand | null>(null)
   const [heldBack, setHeldBack] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -105,6 +106,10 @@ export function ImportScreen({ device }: { device: DeviceGuideId | null }) {
       setState({ status: 'unsupported', brand: card.brand })
       return
     }
+
+    // The notice below follows the card in front of the reader, not the device they picked in
+    // onboarding, because those two disagree exactly when it matters.
+    setReadBrand(card.brand)
 
     setState({ status: 'uploading' })
     const outcome = await uploadCard(
@@ -240,6 +245,13 @@ export function ImportScreen({ device }: { device: DeviceGuideId | null }) {
                 : therapy('unsupportedUnknown')}
             </p>
           </div>
+        </PanelCard>
+      ) : null}
+
+      {readBrand && BRAND_COVERAGE[readBrand] === 'read' ? (
+        <PanelCard className="flex items-start gap-3 px-5 py-4 text-sm">
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <p className="min-w-0 text-muted-foreground">{t('unverifiedBrand', { brand: BRAND_NAMES[readBrand] })}</p>
         </PanelCard>
       ) : null}
 

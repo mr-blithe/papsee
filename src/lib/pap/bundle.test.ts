@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decodePapBundle, encodePapBundle, encodePapBundleHeader, PapBundleError, type PapFileChunk } from './bundle'
-import { writeSyntheticCard } from './synthetic/card'
+import { writeSyntheticCard } from './synthetic/resmed-card'
 import type { PapFile } from './types'
 
 function bytesOf(values: number[]): ArrayBuffer {

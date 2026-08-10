@@ -14,11 +14,12 @@ synthetic file that triggers the same thing. `src/lib/pap/synthetic/` exists for
 
 ## The most useful thing you can do
 
-PapSee has been verified against one real card, a ResMed AirSense 11 AutoSet. Everything else is implemented from
-the format and from OSCAR's source, and tested only against synthetic files.
+PapSee has been verified against one real card, a ResMed AirSense 11 AutoSet. Everything else, including the whole
+Löwenstein prisma reader, is implemented from the format and from OSCAR's source, and tested only against synthetic
+files.
 
-So: **import your card and tell us what happened.** An S9, an AirSense 10, an AirCurve, a bilevel or ASV machine, or
-one of the brands that is detected but refused. Whether it worked, where a number looked wrong, what the app claimed
+So: **import your card and tell us what happened.** An S9, an AirSense 10, an AirCurve, a Löwenstein prisma SMART or
+SOFT, a bilevel or ASV machine, or one of the brands that is detected but refused. Whether it worked, where a number looked wrong, what the app claimed
 it could not read. Use the device report issue template. That feedback is not a smaller contribution than code, it
 is the thing code cannot substitute for.
 
@@ -103,8 +104,9 @@ Open an issue before you start on any of these, so nobody wastes an afternoon:
 
 - Adding a dependency. Say why, and why nothing already installed does the job.
 - Anything touching authentication, `src/proxy.ts` or `next.config.ts`.
-- A second device brand. It belongs beside `resmed/` behind the same `PapImport` shape, and there is prior research
-  on what each brand would cost that is worth asking for before you begin.
+- Another device brand. It belongs beside `resmed/` and `lowenstein/` as an entry in `src/lib/pap/loaders.ts`, behind
+  the same `PapImport` shape, and there is prior research on what each brand would cost that is worth asking for
+  before you begin.
 - Anything that changes what leaves the browser. No third party may see the contents of an import, analytics
   included.
 

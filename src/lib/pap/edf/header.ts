@@ -64,6 +64,20 @@ function parseStartTime(date: string, time: string): UTCDate {
   return deviceTime(year, mm ?? 1, dd ?? 1, hh ?? 0, mi ?? 0, ss ?? 0)
 }
 
+/**
+ * The clock in an EDF fixed header, from the fixed header alone. Separate from `parseEdf` because a
+ * caller that only has to date a file should not need the signal table that follows it, which is what
+ * lets a commit read a few opening bytes of every file rather than all of them.
+ */
+export function parseEdfStartTime(head: Uint8Array): UTCDate | null {
+  if (head.byteLength < HEADER_FIXED_BYTES) return null
+
+  const view = new DataView(head.buffer, head.byteOffset, head.byteLength)
+  const at = parseStartTime(text(view, 168, 8), text(view, 176, 8))
+
+  return Number.isFinite(at.getTime()) ? at : null
+}
+
 export function parseEdf(buffer: ArrayBuffer, sampleWidth: EdfSampleWidth = TWO_BYTES): EdfFile {
   const view = new DataView(buffer)
   const headerBytes = number(view, 184, 8)

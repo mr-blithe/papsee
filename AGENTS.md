@@ -13,7 +13,7 @@ PapSee is a web platform for people with sleep apnea to read their own PAP thera
 what their device wrote to its SD card, and gets the nights back: flow, pressure, leak and respiration charts, the
 events the device scored, AHI and the other indices, session times, the settings the device was running, trends across
 nights, and a JSON or CSV export to hand to a doctor. English and Turkish throughout, and an example patient that opens
-every screen without an account. ResMed is the only brand that imports; every other one is recognised and refused.
+every screen without an account. ResMed and Löwenstein prisma import; every other brand is recognised and refused.
 
 It is OSCAR rebuilt for the web. OSCAR is the desktop tool this community trusts, but it is a local Qt application:
 one machine, one install, manual imports, no account, nothing to share. PapSee keeps OSCAR's honesty about the data and
@@ -341,8 +341,12 @@ One marked exception may reach for Node: `*.server.ts`. The input is always `{ p
 same code serves the browser folder picker and the server side commit.
 
 ```text
-edf/       Generic EDF and EDF+ reader. Nothing ResMed specific.
+edf/       Generic EDF and EDF+ reader. Nothing brand specific, including the sample width rule.
+loaders.ts The brand seam: one CardLoader per readable brand, keyed by CardBrand. A brand with no
+           entry is detected and refused rather than parsed by somebody else's reader.
 resmed/    ResMed loader: Identification.json and .tgt, CurrentSettings.json, STR.edf, DATALOG.
+lowenstein/ Löwenstein prisma SMART and SOFT: config.pscfg, WMEDF signals, XML events and settings.
+summary.ts The night summary a card without one still owes: median, 95th and maximum per channel.
 detect.ts  Card brand fingerprints, from paths alone. Runs before anything is parsed.
 device-time.ts Every clock reading a device wrote, and the therapy day key. See Time below.
 stats.ts   Event indices, the AHI traced across a night, time at pressure, duration helpers.
@@ -374,10 +378,17 @@ is a silent wrong number if it regresses, not a crash, so each one has a test.
 Raw ResMed signal labels appear only in `resmed/channels.ts` and `resmed/str.ts`. Everything above them speaks in
 `ChannelId`.
 
-ResMed is the only brand implemented, and `detect.ts` names the others rather than letting an unreadable card look
-like an empty night. **Never let an unsupported card fall through as a blank panel**: a patient cannot tell that from
-a good night. A second brand belongs beside `resmed/` behind the same `PapImport` shape, and it does not get to widen
-that shape for itself.
+`detect.ts` names the brands nothing reads rather than letting an unreadable card look like an empty night. **Never
+let an unsupported card fall through as a blank panel**: a patient cannot tell that from a good night. A brand belongs
+beside `resmed/` and `lowenstein/` as an entry in `loaders.ts`, behind the same `PapImport` shape, and it does not get
+to widen that shape for itself. Two consequences of the seam are load bearing:
+
+- **`isImportable` and `isCardLevel` belong to the loader, not to a global list.** A shared whitelist would make every
+  ResMed import upload any stray `.xml` in the picked folder, and `sources.ts` therefore detects the brand from the
+  path listing before it reads a single byte.
+- **`headBytes` is a number, not a flag.** A brand that can date its files from their paths declares `0` and the commit
+  reads no bytes to place them; Löwenstein declares 256 because its day directory naming is unknown and the therapy day
+  can only come from the WMEDF header clock. ResMed's opening slice is byte identical to what it always was.
 
 `DEVICE-COVERAGE.md` records what each brand would cost, what is deliberately left undone and why. It is gitignored
 and lives only in the maintainer's working copy, so read it before touching device support if you have it, and say
@@ -656,7 +667,8 @@ synthetic one, and that is the bar for the next one.
 - Theming goes through the CSS variables in `src/app/globals.css`. Do not hardcode a colour a token already names.
 - Treat `src/components/ui/` as owned by the shadcn CLI. Local edits are allowed but they are yours to maintain, so keep them small and deliberate.
 - Icons come from the icon library named in `components.json`.
-- **Icons must come from `lucide-react`. Never hand write an SVG icon.** SVG remains appropriate for data visualisations, charts and the established PapSee logo mark, which are not interface icons.
+- **Interface icons must come from `lucide-react`. Never hand write an SVG icon.** SVG remains appropriate for data visualisations, charts and the established PapSee logo mark, which are not interface icons.
+- **A third party's own logo is the one exception, and it comes from `@icons-pack/react-simple-icons`.** Lucide dropped brand icons, so there is no lucide GitHub mark to use. That package is MIT with no runtime dependencies, wraps the CC0 `simple-icons` set, and is marked `sideEffects: false` so a named import ships one icon. Reach for it only for a real brand mark; anything that is merely an interface affordance is still lucide's job.
 - Dates go through date-fns, and anything a device wrote goes through `src/lib/pap/device-time.ts`. See Time.
 - Identifiers are English. All user facing copy is English and Turkish, in `messages/`, never inline.
 - Never use an em dash, in code, copy, docs or commit messages.

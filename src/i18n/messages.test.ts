@@ -6,6 +6,7 @@ import { TERM_IDS } from '@/lib/terms'
 import { EXPORT_COLUMN_KEYS, EXPORT_SHEET_KEYS } from '@/lib/therapy/export-tables'
 import { EXPORT_DOWNLOADS } from '@/lib/therapy/export'
 import { routing } from './routing'
+import { DEVICE_GUIDE_IDS } from '@/lib/therapy/device-guides'
 
 const EXCEL_SHEET_NAME_LIMIT = 31
 
@@ -119,6 +120,19 @@ describe('domain vocabulary coverage', () => {
     for (const [locale, messages] of Object.entries(flat)) {
       const missing = EXPORT_DOWNLOADS.map((download) => `Export.${download.label}`).filter((key) => !messages.has(key))
       expect(missing, `missing download format names in ${locale}`).toEqual([])
+    }
+  })
+})
+
+describe('the device guides', () => {
+  it.each(Object.entries(catalogs))('names and explains every guide in %s', (locale, catalog) => {
+    const keys = new Set(flatten(catalog).keys())
+
+    for (const id of DEVICE_GUIDE_IDS) {
+      // Both are looked up through a template literal at the call site, so a guide added without its
+      // copy renders the key path to the reader rather than a sentence.
+      expect(keys, `${locale} Devices.${id}`).toContain(`Devices.${id}`)
+      expect(keys, `${locale} Import.card_${id}`).toContain(`Import.card_${id}`)
     }
   })
 })

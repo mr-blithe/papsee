@@ -29,9 +29,9 @@ describe('the brands that claim to be readable', () => {
 describe('asking for a night of a brand nothing can read', () => {
   it('returns no sessions rather than running another brand reader over it', () => {
     const built = buildDigitalDay(
-      'lowensteinPrisma',
+      'philips',
       '2026-08-08',
-      [{ path: 'x/signal_1.wmedf', data: new ArrayBuffer(8) }],
+      [{ path: 'P-SERIES/P1/001.001', data: new ArrayBuffer(8) }],
       null,
     )
 

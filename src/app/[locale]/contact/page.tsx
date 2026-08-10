@@ -3,6 +3,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { ContactForm } from '@/components/contact-form'
 import { SitePageShell } from '@/components/site-page-shell'
 import type { Locale } from '@/i18n/routing'
+import { SOURCE_URL } from '@/lib/site-url'
 
 export async function generateMetadata(props: PageProps<'/[locale]/contact'>): Promise<Metadata> {
   const { locale } = await props.params
@@ -40,6 +41,25 @@ export default async function ContactPage({ params }: PageProps<'/[locale]/conta
             <h2 className="text-sm font-semibold">{t('privacyTitle')}</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{t('privacyBody')}</p>
           </section>
+          {SOURCE_URL ? (
+            <section className="border-t border-border pt-7">
+              <h2 className="text-sm font-semibold">{t('issueTitle')}</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {t.rich('issueBody', {
+                  link: (chunks) => (
+                    <a
+                      href={`${SOURCE_URL}/issues`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-foreground underline underline-offset-4"
+                    >
+                      {chunks}
+                    </a>
+                  ),
+                })}
+              </p>
+            </section>
+          ) : null}
           <section className="border-t border-border pt-7">
             <h2 className="text-sm font-semibold">{t('medicalTitle')}</h2>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{t('medicalBody')}</p>

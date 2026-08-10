@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { importPapData } from '@/lib/pap'
-import { writeSyntheticCard } from '@/lib/pap/synthetic/card'
+import { writeSyntheticCard } from '@/lib/pap/synthetic/resmed-card'
 import { toDayIndexRow } from './day-index'
 import {
   deviceSettingsTable,

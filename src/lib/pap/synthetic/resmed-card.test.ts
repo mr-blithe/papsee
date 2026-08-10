@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { deviceTime, deviceTimeAt } from '../device-time'
 import { importPapData } from '../index'
 import { planNight } from './night'
-import { writeSyntheticCard } from './card'
+import { writeSyntheticCard } from './resmed-card'
 
 const SEED = 'papsee-example-user'
 const DATE = '2026-07-14'
