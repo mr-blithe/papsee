@@ -4,23 +4,24 @@ Guidance for AI coding assistants working in this repository.
 
 ## What PapSee Is
 
-PapSee is a web platform for people with sleep apnea to read analyze their own PAP therapy data. A user imports what their
-device wrote to its SD card and gets the night back as charts, event indices and statistics, night after night, with
-history and export on top.
+PapSee is a web platform for people with sleep apnea to read their own PAP therapy data. A reader signs up, uploads
+what their device wrote to its SD card, and gets the nights back: flow, pressure, leak and respiration charts, the
+events the device scored, AHI and the other indices, session times, the settings the device was running, trends across
+nights, and a JSON or CSV export to hand to a doctor. English and Turkish throughout, and an example patient that opens
+every screen without an account. ResMed is the only brand that imports; every other one is recognised and refused.
 
 It is OSCAR rebuilt for the web. OSCAR is the desktop tool this community trusts, but it is a local Qt application:
 one machine, one install, manual imports, no account, nothing to share. PapSee keeps OSCAR's honesty about the data and
-drops the desktop. The product shape we are heading towards is closer to SleepHQ: you sign up, you upload whenever you
-like, and your history, trends and reports follow you to any device.
+drops the desktop, in the shape SleepHQ has: your history follows you to any device.
 
 The user is a patient, not a clinician. Motivated, reads forums, but not trained. A number on screen is either
 self-explanatory or it gets explained.
 
 `README.md` holds the product story and the roadmap. This file covers only what changes how you write code. Three
-consequences of that direction are already binding:
+consequences of that direction are binding:
 
-- **The parse layer will move to a server.** `src/lib/pap/` stays framework free so the same import path serves the
-  browser picker today and an authenticated server side ingest later.
+- **The parse layer runs on the server.** The browser fingerprints the card from its paths and uploads bytes, nothing
+  more; `advanceCommit` parses and stores. `src/lib/pap/` stays framework free because both sides run it.
 - **An import belongs to an account.** The import screen uploads a picked card in batches, the server parses it and
   writes the days, and every panel screen reads that back through the API rather than from anything held in React
   state. Nothing in the panel may assume a card is sitting in memory.
