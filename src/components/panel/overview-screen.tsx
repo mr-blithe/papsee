@@ -313,6 +313,7 @@ export function OverviewScreen({ profile }: { profile: PatientProfile | null }) 
       <PanelCard className="flex flex-wrap items-end justify-between gap-3 px-4 py-3 md:px-5">
         <ToggleGroup
           variant="outline"
+          className="flex-wrap"
           value={[custom ? 'custom' : preset]}
           onValueChange={(next) => {
             const chosen = next[0]

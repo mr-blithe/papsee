@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const NARROW_VIEWPORT_PX = 768
-const NARROW_WINDOW_DAYS = 4
+const NARROW_WINDOW_DAYS = 3
 
 interface Month {
   year: number
@@ -104,11 +104,7 @@ export function DayStrip({
           <ChevronLeft aria-hidden />
         </Button>
 
-        <div
-          className="flex min-w-0 flex-1 gap-0.5 overflow-x-auto px-0.5 py-0.5"
-          role="group"
-          aria-label={t('selectDay')}
-        >
+        <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto p-1" role="group" aria-label={t('selectDay')}>
           {days.map((date) => {
             const hasData = available.has(date)
             const active = date === selected
