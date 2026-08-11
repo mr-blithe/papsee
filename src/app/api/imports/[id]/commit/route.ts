@@ -20,6 +20,7 @@ export async function POST(request: Request, context: RouteContext<'/api/imports
 
   if (result.status === 'notFound') return apiError('notFound')
   if (result.status === 'empty') return apiError('emptyCard')
+  if (result.status === 'unreadable') return apiError('unreadableCard')
   if (result.status === 'unsupported') return apiError('unsupportedCard', { brand: result.brand })
 
   return Response.json({

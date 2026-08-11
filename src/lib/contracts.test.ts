@@ -25,6 +25,17 @@ describe('contract seeds', () => {
     expect(privacy).toBeDefined()
     expect(privacy!.contentHtml).not.toMatch(/\bKVKK\b|Turkish|Turkey|Türkiye/)
   })
+
+  it('chooses no governing law in either language of the terms', () => {
+    const terms = CONTRACT_SEEDS.filter(({ type }) => type === 'terms')
+
+    expect(terms).toHaveLength(2)
+
+    for (const seed of terms) {
+      expect(seed.contentHtml).not.toMatch(/\bKVKK\b|Turkish|Turkey|Türkiye/)
+      expect(seed.contentHtml).not.toMatch(/governed by the laws|hukuku uygulanır/)
+    }
+  })
 })
 
 describe('contract HTML', () => {

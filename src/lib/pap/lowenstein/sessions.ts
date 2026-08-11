@@ -11,7 +11,8 @@ const SIGNAL_FILE = /(^|\/)signal_(\d+)\.wmedf$/i
 const EVENT_FILE = /(^|\/)event_(\d+)\.xml$/i
 
 const EIGHT_BIT = '#1'
-const SECONDS_PER_MINUTE = 60
+// A cmH2O is 98.0665 Pa by convention, and this device measures in hectopascals.
+const CM_H2O_PER_HPA = 1.019716
 
 /** The one deviation WMEDF makes from EDF: a per-signal sentinel saying how wide a sample is. */
 function wmSampleWidth(reserved: string): 1 | 2 {
@@ -27,12 +28,13 @@ const CHANNELS: Record<string, ChannelId> = {
 }
 
 /**
- * PapSee stores leak in litres per second and the device labels its own unit, so the header decides the
- * conversion rather than a constant copied from somewhere. Nothing else this brand writes needs one.
+ * PapSee reads flow and leak in litres per minute and every pressure in cmH2O, and the device labels
+ * each signal with the unit it wrote, so the header decides the conversion rather than the channel it
+ * was mapped to. Prisma writes hectopascals, which is the whole reason this exists.
  */
-function unitConversion(id: ChannelId, unit: string): { unit: string; scale: number } {
-  const perMinute = /min/i.test(unit)
-  if (id === 'leak' && perMinute) return { unit: 'L/s', scale: 1 / SECONDS_PER_MINUTE }
+function unitConversion(unit: string): { unit: string; scale: number } {
+  if (/hpa/i.test(unit)) return { unit: 'cmH2O', scale: CM_H2O_PER_HPA }
+  if (/min/i.test(unit)) return { unit: 'L/min', scale: 1 }
 
   return { unit, scale: 1 }
 }
@@ -91,7 +93,7 @@ function toChannel(edf: EdfFile, index: number, signal: EdfSignalHeader, startMs
   if (signal.samplesPerRecord <= 0 || edf.recordDuration <= 0) return null
 
   const scaling = signalScaling(signal)
-  const converted = unitConversion(id, signal.unit)
+  const converted = unitConversion(signal.unit)
   const samples = readDigitalBytes(edf, index)
 
   if (isAllNoData(applyScaling(samples, scaling))) return null

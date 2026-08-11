@@ -8,8 +8,8 @@ import { Link } from '@/i18n/navigation'
 import { BRAND_NAMES, RECOGNISED_BRANDS } from '@/lib/pap'
 import { SOURCE_URL } from '@/lib/site-url'
 import { cn } from '@/lib/utils'
-import { StaticSignalPreview, TherapyPreview } from './therapy-preview'
-import { TrendPreview } from './trend-preview'
+import { HeroPreview } from './hero-preview'
+import { SignalPreview } from './signal-preview'
 
 const BENEFITS = [
   { title: 'accessTitle', body: 'accessBody', color: 'bg-signal-flow' },
@@ -90,7 +90,7 @@ export function LandingPage() {
 
       <main>
         <section className="relative">
-          <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.88fr_1.12fr] lg:gap-16 lg:px-8 lg:py-24">
+          <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.75fr_1.25fr] lg:gap-12 lg:px-8 lg:py-24">
             <div className="max-w-2xl">
               <p className="text-xs font-semibold tracking-[0.16em] text-signal-flow uppercase">{t('eyebrow')}</p>
               <h1 className="mt-5 text-4xl leading-[1.04] font-semibold tracking-[-0.045em] text-balance sm:text-5xl lg:text-6xl">
@@ -112,13 +112,13 @@ export function LandingPage() {
               </ul>
             </div>
 
-            <div className="relative lg:mr-[-5rem] xl:mr-[-7rem]">
+            <div className="relative lg:mr-[-2rem]">
               <div
                 className="absolute -inset-3 rounded-3xl border border-signal-flow/15 bg-signal-flow/5"
                 aria-hidden
               />
               <div className="relative">
-                <TherapyPreview />
+                <HeroPreview />
               </div>
             </div>
           </div>
@@ -156,9 +156,9 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="signals" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24 scroll-mt-16">
-          <div className="grid items-center gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16">
-            <div>
+        <section id="signals" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24 scroll-mt-16">
+          <div className="grid gap-10">
+            <div className="max-w-2xl">
               <p className="text-xs font-semibold tracking-[0.16em] text-signal-pressure uppercase">
                 {t('signalEyebrow')}
               </p>
@@ -167,22 +167,7 @@ export function LandingPage() {
               </h2>
               <p className="mt-5 leading-7 text-muted-foreground">{t('signalBody')}</p>
             </div>
-            <StaticSignalPreview />
-          </div>
-        </section>
-
-        <section id="trends" className="border-y border-border bg-muted/20 scroll-mt-16">
-          <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16 lg:px-8 lg:py-24">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.16em] text-signal-respiration uppercase">
-                {t('trendEyebrow')}
-              </p>
-              <h2 className="mt-4 text-3xl leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-4xl">
-                {t('trendTitle')}
-              </h2>
-              <p className="mt-5 leading-7 text-muted-foreground">{t('trendBody')}</p>
-            </div>
-            <TrendPreview />
+            <SignalPreview />
           </div>
         </section>
 

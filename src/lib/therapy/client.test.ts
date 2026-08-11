@@ -73,7 +73,7 @@ describe('splitting a card into upload batches', () => {
 })
 
 describe('driving a commit to the end', () => {
-  function stubFetch(slices: { done: boolean; committed: string[]; remaining: number }[]) {
+  function stubFetch(slices: { done: boolean; committed: string[]; remaining: number; unreadable?: string[] }[]) {
     const calls: string[] = []
     vi.stubGlobal('fetch', async (path: string) => {
       calls.push(path)
@@ -95,10 +95,22 @@ describe('driving a commit to the end', () => {
       { done: true, committed: ['2026-07-05'], remaining: 0 },
     ])
 
-    const dates = await commitUpload('11111111-1111-1111-1111-111111111111')
+    const outcome = await commitUpload('11111111-1111-1111-1111-111111111111')
 
-    expect(dates).toEqual(['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04', '2026-07-05'])
+    expect(outcome.dates).toEqual(['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04', '2026-07-05'])
     expect(calls).toHaveLength(3)
+  })
+
+  it('carries every night the server could not read, so a finished import cannot claim they arrived', async () => {
+    stubFetch([
+      { done: false, committed: ['2026-07-01'], remaining: 2, unreadable: ['2026-07-02'] },
+      { done: true, committed: ['2026-07-03'], remaining: 0, unreadable: [] },
+    ])
+
+    const outcome = await commitUpload('11111111-1111-1111-1111-111111111111')
+
+    expect(outcome.dates).toEqual(['2026-07-01', '2026-07-03'])
+    expect(outcome.unreadable).toEqual(['2026-07-02'])
   })
 
   it('reports progress that only ever moves forward, so a reader is not told it went backwards', async () => {
@@ -123,19 +135,25 @@ describe('driving a commit to the end', () => {
       return new Response(JSON.stringify({ done: true, committed: ['2026-07-01'], remaining: 0 }), { status: 200 })
     })
 
-    await expect(commitUpload('11111111-1111-1111-1111-111111111111')).resolves.toEqual(['2026-07-01'])
+    await expect(commitUpload('11111111-1111-1111-1111-111111111111')).resolves.toEqual({
+      dates: ['2026-07-01'],
+      unreadable: [],
+    })
     expect(attempt).toBe(2)
   })
 
-  it('gives up immediately on a card the server cannot read, because retrying cannot change that', async () => {
-    let attempt = 0
-    vi.stubGlobal('fetch', async () => {
-      attempt += 1
+  it.each(['unsupportedCard', 'emptyCard', 'unreadableCard'])(
+    'gives up immediately on %s, because retrying cannot change a verdict about the card itself',
+    async (code) => {
+      let attempt = 0
+      vi.stubGlobal('fetch', async () => {
+        attempt += 1
 
-      return new Response(JSON.stringify({ error: 'unsupportedCard' }), { status: 422 })
-    })
+        return new Response(JSON.stringify({ error: code }), { status: 422 })
+      })
 
-    await expect(commitUpload('11111111-1111-1111-1111-111111111111')).rejects.toThrow(TherapyApiError)
-    expect(attempt).toBe(1)
-  })
+      await expect(commitUpload('11111111-1111-1111-1111-111111111111')).rejects.toThrow(TherapyApiError)
+      expect(attempt).toBe(1)
+    },
+  )
 })

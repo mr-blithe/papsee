@@ -71,6 +71,8 @@ describe('public search metadata', () => {
           '/api/',
           '/panel',
           '/tr/panel',
+          '/admin',
+          '/tr/admin',
           '/share',
           '/tr/share',
           '/sign-in',

@@ -1,4 +1,5 @@
 import { CONFIRMATION_ERROR_CODE } from '@/lib/account-confirmation'
+import { IP_BAN_ERROR_CODE } from '@/lib/ip-ban'
 import { LEGAL_ACCEPTANCE_ERROR_CODE } from '@/lib/legal-acceptance'
 
 export const PASSWORD_MIN_LENGTH = 8
@@ -27,6 +28,8 @@ const MESSAGE_KEY_BY_CODE = {
   ACCOUNT_TEMPORARILY_LOCKED: 'errorAccountLocked',
   INVALID_TWO_FACTOR_COOKIE: 'errorChallengeExpired',
   [CONFIRMATION_ERROR_CODE]: 'errorConfirmationFailed',
+  BANNED_USER: 'errorBanned',
+  [IP_BAN_ERROR_CODE]: 'errorIpBanned',
   // Google refuses rather than creating an account behind the reader's back, so these two arrive as
   // a redirect back to the page the button was pressed on rather than as a client side error.
   signup_disabled: 'errorGoogleNoAccount',

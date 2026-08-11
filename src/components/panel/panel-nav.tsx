@@ -149,13 +149,17 @@ export function PanelSidebar({ onboarded, view }: { onboarded: boolean; view: Pa
 }
 
 export function PanelTopBar({
+  name,
   email,
   onboarded,
   view,
+  isAdmin,
 }: {
+  name: string
   email: string | null
   onboarded: boolean
   view: PanelView | null
+  isAdmin: boolean
 }) {
   const t = useTranslations('Nav')
   const inDemo = useDemoMode(view === 'demo')
@@ -185,7 +189,7 @@ export function PanelTopBar({
         ) : null}
         <LanguageSwitcher />
         <ThemeToggle />
-        {email ? <UserMenu email={email} view={view ?? 'account'} /> : null}
+        {email ? <UserMenu name={name} email={email} view={view ?? 'account'} isAdmin={isAdmin} /> : null}
       </div>
     </div>
   )

@@ -82,10 +82,23 @@ describe('importing a Prisma card end to end', () => {
     expect(channels).toContain('expiratoryPressure')
   })
 
-  it('reports leak in litres per second, the unit every brand here is stored in', () => {
+  it('reports leak in the litres per minute every screen labels a leak with', () => {
     const leak = imported.days[0].sessions[0].channels.find((channel) => channel.id === 'leak')
+    const planted = nights[0].summary.leak.percentile95 ?? 0
 
-    expect(leak?.unit).toBe('L/s')
+    expect(leak?.unit).toBe('L/min')
+    // Wide on purpose: the slip this catches is a whole factor of sixty, and the channel is sampled
+    // once a second against a night planned by the minute, so an exact figure would be fiction.
+    expect(imported.days[0].summary?.leak.percentile95).toBeGreaterThan(planted / 2)
+    expect(imported.days[0].summary?.leak.percentile95).toBeLessThan(planted * 2)
+  })
+
+  it('reads the hectopascals the device writes as the cmH2O every pressure is shown in', () => {
+    const pressure = imported.days[0].sessions[0].channels.find((channel) => channel.id === 'maskPressure')
+    const planted = nights[0].summary.maskPressure.percentile95 ?? 0
+
+    expect(pressure?.unit).toBe('cmH2O')
+    expect(imported.days[0].summary?.maskPressure.percentile95).toBeCloseTo(planted, 0)
   })
 
   it('measures the night itself, because this card carries no summary to read one from', () => {

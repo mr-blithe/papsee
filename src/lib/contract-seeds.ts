@@ -247,8 +247,8 @@ export const CONTRACT_SEEDS = [
       <p>To the extent permitted by law, PapSee is not liable for indirect, incidental or consequential loss caused by reliance on device-generated information, loss of access, third-party services or failure to keep your own copy of imported files. Nothing in these terms excludes or limits liability that cannot legally be excluded, including liability for fraud, wilful misconduct, gross negligence, death or personal injury where applicable.</p>
       <p>Your mandatory consumer rights remain unaffected. Any limitation is applied only to the maximum extent allowed in your jurisdiction.</p>
 
-      <h2>Governing law and disputes</h2>
-      <p>These terms are governed by the laws of the Republic of Türkiye, without removing any mandatory protection granted to you by the law of your country of residence. Courts and consumer dispute bodies that have mandatory jurisdiction remain available to you.</p>
+      <h2>Disputes</h2>
+      <p>Nothing in these terms removes a mandatory protection granted to you by the law of your country of residence, and courts and consumer dispute bodies that have mandatory jurisdiction over you remain available.</p>
       <p>Before starting formal proceedings, you may contact us through the <a href="/contact">contact page</a> so the issue can be reviewed.</p>
 
       <h2>Changes to these terms</h2>
@@ -317,8 +317,8 @@ export const CONTRACT_SEEDS = [
       <p>Kanunun izin verdiği ölçüde PapSee; cihazın oluşturduğu bilgilere güvenilmesi, erişim kaybı, üçüncü taraf hizmetleri veya içe aktarılan dosyaların kendi kopyanızı saklamamanız nedeniyle doğan dolaylı, arızi veya sonuç niteliğindeki kayıplardan sorumlu değildir. Bu koşullardaki hiçbir hüküm; hile, kasıt, ağır kusur, ölüm veya bedensel zarar dâhil olmak üzere hukuken hariç tutulamayacak sorumluluğu ortadan kaldırmaz ya da sınırlandırmaz.</p>
       <p>Emredici tüketici haklarınız etkilenmez. Her sınırlama yalnızca bulunduğunuz hukuk düzeninin izin verdiği en geniş ölçüde uygulanır.</p>
 
-      <h2>Uygulanacak hukuk ve uyuşmazlıklar</h2>
-      <p>Bu koşullara Türkiye Cumhuriyeti hukuku uygulanır. Bu seçim, ikamet ettiğiniz ülke hukukunun size sağladığı emredici korumaları ortadan kaldırmaz. Zorunlu yetkiye sahip mahkemelere ve tüketici uyuşmazlık mercilerine başvuru haklarınız saklıdır.</p>
+      <h2>Uyuşmazlıklar</h2>
+      <p>Bu koşullardaki hiçbir hüküm, ikamet ettiğiniz ülke hukukunun size sağladığı emredici korumaları ortadan kaldırmaz; hakkınızda zorunlu yetkiye sahip mahkemelere ve tüketici uyuşmazlık mercilerine başvuru haklarınız saklıdır.</p>
       <p>Resmî bir sürece başlamadan önce konunun incelenebilmesi için <a href="/tr/contact">iletişim sayfası</a> üzerinden bize ulaşabilirsiniz.</p>
 
       <h2>Koşullardaki değişiklikler</h2>

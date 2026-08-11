@@ -1,6 +1,6 @@
 {
   "name": "papsee",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Read your own PAP therapy data in the browser: waveforms, scored events, indices and trends, night after night.",
   "license": "AGPL-3.0-only",
@@ -23,7 +23,8 @@
     "test:coverage": "vitest run --coverage",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed-contracts": "tsx scripts/seed-contracts.ts"
+    "db:seed-contracts": "tsx scripts/seed-contracts.ts",
+    "db:promote-admin": "tsx scripts/promote-admin.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

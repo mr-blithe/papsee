@@ -6,11 +6,14 @@ const STATUS_BY_CODE = {
   notInSharedView: 403,
   invalidPassword: 403,
   confirmationFailed: 403,
+  forbidden: 403,
   notFound: 404,
   tooManyShares: 409,
+  cannotBanOwnIp: 409,
   payloadTooLarge: 413,
   unsupportedCard: 422,
   emptyCard: 422,
+  unreadableCard: 422,
 } as const
 
 export type ApiErrorCode = keyof typeof STATUS_BY_CODE

@@ -7,7 +7,8 @@ import { SHARE_COOKIE } from '@/lib/share-cookie'
 
 const handleI18n = createMiddleware(routing)
 
-const PROTECTED_PATHNAME = '/panel'
+const PANEL_PATHNAME = '/panel'
+const ADMIN_PATHNAME = '/admin'
 const SIGN_IN_PATHNAME = '/sign-in'
 
 function splitLocale(pathname: string): { locale: Locale; pathnameWithoutLocale: string } {
@@ -22,19 +23,28 @@ function localize(pathname: string, locale: Locale): string {
   return locale === routing.defaultLocale ? pathname : `/${locale}${pathname}`
 }
 
+function isUnder(pathname: string, area: string): boolean {
+  return pathname === area || pathname.startsWith(`${area}/`)
+}
+
 export function proxy(request: NextRequest): NextResponse {
   const response = handleI18n(request)
   if (response.headers.has('location')) return response
 
   const { locale, pathnameWithoutLocale } = splitLocale(request.nextUrl.pathname)
-  const isProtected =
-    pathnameWithoutLocale === PROTECTED_PATHNAME || pathnameWithoutLocale.startsWith(`${PROTECTED_PATHNAME}/`)
+  const panel = isUnder(pathnameWithoutLocale, PANEL_PATHNAME)
+  const admin = isUnder(pathnameWithoutLocale, ADMIN_PATHNAME)
+
+  if (!panel && !admin) return response
+  if (getSessionCookie(request)) return response
 
   const demo = request.cookies.get(DEMO_COOKIE)?.value === DEMO_COOKIE_VALUE
   // Presence only, like the session cookie above: the token behind a shared view is checked against
   // the database in getPanelContext, and a stray cookie buys nothing but a bounce one page later.
   const shared = request.cookies.has(SHARE_COOKIE)
-  if (!isProtected || getSessionCookie(request) || demo || shared) return response
+  // Both are credentials for reading therapy data and neither says who the reader is, so they open
+  // the panel and never the admin area.
+  if (panel && (demo || shared)) return response
 
   const signIn = NextResponse.redirect(new URL(localize(SIGN_IN_PATHNAME, locale), request.url))
   for (const cookie of response.headers.getSetCookie()) {

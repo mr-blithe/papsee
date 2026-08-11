@@ -74,6 +74,20 @@ export const therapyShare = pgTable(
   ],
 )
 
+export const bannedIp = pgTable(
+  'banned_ip',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ip: text('ip').notNull(),
+    reason: text('reason'),
+    // Not cascade, unlike every other reference to user in this file: a ban has to outlive the
+    // admin who placed it, or deleting an account would quietly lift every address it ever banned.
+    bannedBy: text('banned_by').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex('banned_ip_ip_idx').on(table.ip)],
+)
+
 export const papImport = pgTable(
   'pap_import',
   {

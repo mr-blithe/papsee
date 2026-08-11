@@ -5,6 +5,8 @@ const PRIVATE_ROUTES = [
   '/api/',
   '/panel',
   '/tr/panel',
+  '/admin',
+  '/tr/admin',
   '/share',
   '/tr/share',
   '/sign-in',

@@ -1,13 +1,16 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { betterAuth } from 'better-auth'
-import { APIError, createAuthMiddleware } from 'better-auth/api'
+import { APIError, createAuthMiddleware, getIp } from 'better-auth/api'
 import { nextCookies } from 'better-auth/next-js'
-import { captcha, twoFactor } from 'better-auth/plugins'
+import { admin, captcha, twoFactor } from 'better-auth/plugins'
+import { defaultAc, userAc } from 'better-auth/plugins/admin/access'
 import { CONFIRMATION_ERROR_CODE, CONFIRMATION_HEADER } from '@/lib/account-confirmation'
 import { consumeAccountConfirmation } from '@/lib/account-confirmation.server'
 import { sendSignInCodeMail, sendVerificationMail } from '@/lib/auth-mail.server'
 import { SIGN_IN_CODE_EXPIRY_MINUTES, VERIFICATION_LINK_EXPIRY_MINUTES } from '@/lib/auth-mail'
+import { isIpBanned } from '@/lib/admin/repository'
 import { db } from '@/lib/db'
+import { IP_BAN_ERROR_CODE, isAuthEntryPath } from '@/lib/ip-ban'
 import { LEGAL_ACCEPTANCE_ERROR_CODE, hasLegalAcceptance, requiresLegalAcceptance } from '@/lib/legal-acceptance'
 import { parseSmtpEnvironment } from '@/lib/mail'
 import { enrolTwoFactor } from '@/lib/two-factor-enrolment'
@@ -18,6 +21,7 @@ const SIGN_UP_CHALLENGE_ACTION = 'sign-up'
 const SECONDS_PER_MINUTE = 60
 const SIGN_IN_CODE_ATTEMPTS = 5
 const SIGN_IN_CHALLENGE_SECONDS = 15 * SECONDS_PER_MINUTE
+const IMPERSONATION_SECONDS = 15 * SECONDS_PER_MINUTE
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
@@ -38,6 +42,11 @@ const turnstile =
 export const signUpChallenge = turnstile ? { siteKey: turnstile.siteKey, action: SIGN_UP_CHALLENGE_ACTION } : null
 
 const isAccountMailEnabled = parseSmtpEnvironment(process.env) !== null
+
+const adminPermissions = defaultAc.newRole({
+  user: ['ban', 'impersonate', 'delete'],
+  session: ['revoke'],
+})
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: 'pg', transaction: true }),
@@ -97,6 +106,14 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (context) => {
+      // Ahead of the legal check, so a banned address is not told which header it forgot.
+      if (isAuthEntryPath(context.path) && context.headers) {
+        const ip = getIp(context.headers, context.context.options)
+        if (ip && (await isIpBanned(ip))) {
+          throw APIError.from('FORBIDDEN', { code: IP_BAN_ERROR_CODE, message: IP_BAN_ERROR_CODE })
+        }
+      }
+
       const requestSignUp =
         typeof context.body === 'object' &&
         context.body !== null &&
@@ -113,6 +130,19 @@ export const auth = betterAuth({
     }),
   },
   plugins: [
+    // First on purpose. TypeScript keeps this array a tuple only while its leading entries are
+    // fixed, and a spread in front of a plugin erases the field types its schema adds, so role and
+    // impersonatedBy would vanish from the inferred session.
+    admin({
+      // Least privilege, and the list is the feature set rather than a copy of the library's own
+      // adminAc. Everything absent from it answers 403 to every caller, admins included: set-role,
+      // create-user, update-user, set-password, set-email, list-users, get-user, list-user-sessions
+      // and impersonate-admins. Promotion is pnpm db:promote-admin and nothing else. The reads all
+      // go through src/lib/admin/repository.ts, so the panel never needs the plugin's list or get.
+      // hasPermission reads `roles` alone; the plugin never looks at an `ac` option server side.
+      roles: { admin: adminPermissions, user: userAc },
+      impersonationSessionDuration: IMPERSONATION_SECONDS,
+    }),
     ...(turnstile
       ? [
           captcha({

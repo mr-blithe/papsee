@@ -102,6 +102,49 @@ describe('panel protection', () => {
   })
 })
 
+describe('admin protection', () => {
+  it('sends a signed out visitor to the sign in page, in either language', () => {
+    for (const [pathname, signIn] of [
+      ['/admin/users', '/sign-in'],
+      ['/tr/admin/users', '/tr/sign-in'],
+    ]) {
+      const response = proxy(request(pathname))
+
+      expect(response.status, pathname).toBe(307)
+      expect(location(response), pathname).toBe(signIn)
+    }
+  })
+
+  it('lets a visitor carrying a session cookie through, so the page can decide', () => {
+    const response = proxy(request('/admin/users', SESSION_COOKIE))
+
+    expect(location(response)).toBe(null)
+    expect(response.status).toBe(200)
+  })
+
+  // Demo and share are credentials for reading therapy data, and neither says anything about who
+  // the reader is. Letting either open the admin area would hand it to anyone who can set a cookie.
+  it('refuses the demo cookie, which opens the panel but never the admin area', () => {
+    const response = proxy(request('/admin/users', `${DEMO_COOKIE}=${DEMO_COOKIE_VALUE}`))
+
+    expect(response.status).toBe(307)
+    expect(location(response)).toBe('/sign-in')
+  })
+
+  it('refuses a share cookie, which opens the panel but never the admin area', () => {
+    const response = proxy(request('/admin/users', `${SHARE_COOKIE}=HqL3n8Mc0pQ7rTvB2sYd4Xf6ZjW1kA9eGuNiO5bC3xE`))
+
+    expect(response.status).toBe(307)
+    expect(location(response)).toBe('/sign-in')
+  })
+
+  it('protects the admin area by path segment, not by prefix', () => {
+    const response = proxy(request('/administration'))
+
+    expect(location(response)).toBe(null)
+  })
+})
+
 describe('locale routing survives the auth guard', () => {
   it('hands back the next-intl redirect that strips a redundant default prefix', () => {
     const response = proxy(request('/en/panel/therapy'))

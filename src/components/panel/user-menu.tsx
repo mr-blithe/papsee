@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { LogOut, Settings as SettingsIcon, UserRound } from 'lucide-react'
+import { LogOut, Settings as SettingsIcon, ShieldUser, UserRound } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,9 +20,20 @@ import type { PanelView } from '@/lib/panel-context'
 import { leaveDemoMode, leaveSharedView } from '@/lib/therapy/client'
 import { useDemoMode } from './use-demo-mode'
 
-export function UserMenu({ email, view }: { email: string; view: PanelView }) {
+export function UserMenu({
+  name,
+  email,
+  view,
+  isAdmin,
+}: {
+  name: string
+  email: string
+  view: PanelView
+  isAdmin: boolean
+}) {
   const t = useTranslations('Auth')
   const actions = useTranslations('Actions')
+  const nav = useTranslations('Nav')
   const demoCopy = useTranslations('Demo')
   const sharing = useTranslations('Sharing')
   const router = useRouter()
@@ -52,8 +63,16 @@ export function UserMenu({ email, view }: { email: string; view: PanelView }) {
       />
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
-          <DropdownMenuLabel className="max-w-56 truncate font-normal">{email}</DropdownMenuLabel>
+          {/* An account signed up through Google may carry a blank name, and a menu with no heading
+              at all is worse than one showing the address it was opened with. */}
+          <DropdownMenuLabel className="max-w-56 truncate font-normal">{name.trim() || email}</DropdownMenuLabel>
           <DropdownMenuSeparator />
+          {isAdmin ? (
+            <DropdownMenuItem render={<Link href="/admin/overview" />}>
+              <ShieldUser aria-hidden />
+              {nav('adminPanel')}
+            </DropdownMenuItem>
+          ) : null}
           {reading === 'account' ? (
             <DropdownMenuItem render={<Link href="/panel/settings" />}>
               <SettingsIcon aria-hidden />

@@ -21,7 +21,7 @@ type ImportState =
   | { status: 'committing'; progress?: CommitProgress }
   | { status: 'unsupported'; brand: CardBrand | null }
   | { status: 'failed'; key: ApiErrorMessageKey }
-  | { status: 'done'; nights: number }
+  | { status: 'done'; nights: number; unreadable: number }
 
 function CoverageRow({ term, detail }: { term: string; detail: string }) {
   return (
@@ -123,8 +123,8 @@ export function ImportScreen({ device }: { device: DeviceGuideId | null }) {
       return
     }
 
-    trackEvent('import_completed', { nights: outcome.dates.length })
-    setState({ status: 'done', nights: outcome.dates.length })
+    trackEvent('import_completed')
+    setState({ status: 'done', nights: outcome.dates.length, unreadable: outcome.unreadable.length })
   }
 
   const phase = (): { label: string; value: number | null } | null => {
@@ -227,6 +227,12 @@ export function ImportScreen({ device }: { device: DeviceGuideId | null }) {
             <CheckCircle2 className="mx-auto size-8 text-muted-foreground" aria-hidden />
             <h2 className="mt-4 text-base font-semibold tracking-tight">{t('doneTitle')}</h2>
             <p className="mt-2 text-sm text-muted-foreground">{t('doneBody', { nights: state.nights })}</p>
+            {state.unreadable > 0 ? (
+              <p className="mx-auto mt-2 flex max-w-md items-start gap-2 text-left text-sm text-muted-foreground">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                {t('doneUnreadable', { nights: state.unreadable })}
+              </p>
+            ) : null}
             <Button className="mt-5" onClick={() => router.push('/panel/therapy')}>
               {actions('openTherapy')}
             </Button>

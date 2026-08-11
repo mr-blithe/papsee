@@ -103,12 +103,17 @@ export interface CommitProgress {
   total: number
 }
 
-export type UploadOutcome = { status: 'committed'; dates: string[] } | { status: 'failed'; code: string }
+export interface CommitOutcome {
+  dates: string[]
+  unreadable: string[]
+}
+
+export type UploadOutcome = ({ status: 'committed' } & CommitOutcome) | { status: 'failed'; code: string }
 
 const COMMIT_ATTEMPTS = 3
 
 /** Verdicts about the card itself. Retrying one only makes the reader wait for the same answer. */
-const FINAL_COMMIT_ERRORS: (string | undefined)[] = ['unsupportedCard', 'emptyCard']
+const FINAL_COMMIT_ERRORS: (string | undefined)[] = ['unsupportedCard', 'emptyCard', 'unreadableCard']
 
 /**
  * Drives the commit to completion. Every slice is idempotent, so a blip is retried rather than
@@ -117,11 +122,12 @@ const FINAL_COMMIT_ERRORS: (string | undefined)[] = ['unsupportedCard', 'emptyCa
 export async function commitUpload(
   importId: string,
   onProgress?: (progress: CommitProgress) => void,
-): Promise<string[]> {
+): Promise<CommitOutcome> {
   const dates: string[] = []
+  const unreadable: string[] = []
 
   for (;;) {
-    let slice: { done: boolean; committed: string[]; remaining: number } | null = null
+    let slice: { done: boolean; committed: string[]; remaining: number; unreadable?: string[] } | null = null
     let failure: unknown = null
 
     for (let attempt = 0; attempt < COMMIT_ATTEMPTS && slice === null; attempt += 1) {
@@ -130,6 +136,7 @@ export async function commitUpload(
           done: boolean
           committed: string[]
           remaining: number
+          unreadable?: string[]
         }
       } catch (error) {
         failure = error
@@ -140,9 +147,10 @@ export async function commitUpload(
     if (!slice) throw failure
 
     dates.push(...slice.committed)
+    unreadable.push(...(slice.unreadable ?? []))
     onProgress?.({ committed: dates.length, total: dates.length + slice.remaining })
 
-    if (slice.done) return dates
+    if (slice.done) return { dates, unreadable }
   }
 }
 
@@ -213,7 +221,7 @@ export async function uploadCard(
       onProgress?.({ sent, total: files.length })
     }
 
-    return { status: 'committed', dates: await commitUpload(importId, onCommitProgress) }
+    return { status: 'committed', ...(await commitUpload(importId, onCommitProgress)) }
   } catch (error) {
     await fetch(`/api/imports/${importId}`, { method: 'DELETE', credentials: 'same-origin' }).catch(() => undefined)
 

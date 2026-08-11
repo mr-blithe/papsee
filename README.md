@@ -3,34 +3,46 @@
 [![CI](https://github.com/mr-blithe/papsee/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/mr-blithe/papsee/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/github/mr-blithe/papsee/graph/badge.svg?token=OUV7INYX7X)](https://codecov.io/github/mr-blithe/papsee)
 
-Online PAP therapy tracking suite.
+Free and open source PAP therapy tracking in the browser.
 
-PapSee reads what your PAP device wrote to its SD card and gives the night back to you: the flow waveform, every
-scored event, AHI, leak, pressure, usage, and the history and trends across nights. On a phone, on a laptop, on
-whatever you happen to be holding.
+PapSee reads the data on your PAP device's SD card and turns it into a permanent, account-linked history. Review
+flow, events, AHI, leak, pressure, usage and long-term trends from your phone, tablet or computer.
 
-**[www.papsee.com](https://www.papsee.com)** is the hosted instance. Open the example patient there to click through
-every screen without an account, or sign up use it directly. If you would rather your therapy
-data never left your own machine, [self host it](#self-hosting) instead: same application, one command.
+**[www.papsee.com](https://www.papsee.com)** is the hosted instance. Open the example patient without an account,
+sign up to use it directly, or [self host it](#self-hosting) to keep the application and its data on infrastructure
+you control.
 
-## Why this exists
+## What it solves
 
-I was diagnosed with sleep apnea not long ago and did what most people do: put the SD card into OSCAR and started learning. OSCAR is
-excellent and I still recommend it. Two things never worked for me, though. I could not look at a night from my
-phone, and when I wanted to show a few nights to my doctor I had nothing to hand over but screenshots.
+Uploading the SD card is only the first step. The real problem is being able to view, keep and share the data after
+the card is removed.
 
-Then I found a handful of paid tools that solved exactly that, at fifteen to twenty dollars a month if you wanted to
-keep more than thirty days of history. Paying rent on a recording of my own breathing did not sit right, so I built
-this instead: for myself first, then for anyone else in the same position.
+- **Your therapy history is available anywhere.** After an import, you do not need the SD card, PAP device, OSCAR or
+  even the same computer to review a night. Sign in from a phone, tablet or another computer.
+- **Sharing does not require hardware or screenshots.** Generate a read-only viewer link and send it to a doctor or
+  clinic. They can review the nights in a browser without taking your PAP device or SD card with them.
+- **Your history is not tied to one manufacturer.** If you move to another device that PapSee supports, the nights
+  imported from the previous device remain in the same history.
+- **Your data is no longer stored in only one fragile place.** If the PAP device fails, the SD card is corrupted, a
+  computer is formatted or OSCAR is removed, the copy already imported into PapSee remains available.
+- **You can leave without losing access to your own data.** Export the stored history as JSON or CSV whenever you
+  need it.
+- **You control where the data lives.** Use the hosted instance for convenience or self host the same application on
+  infrastructure you control.
 
-What I want back is feedback. Try it with your own card and tell me where it is wrong, confusing, or missing
-something you would expect from OSCAR. Especially if your machine is not an AirSense 11, because that is the one
-thing I cannot test myself. And if your answer is "I would never upload this data to a website", that is a
-completely fair position, it is why self hosting exists, and I would still like to know how common it is.
+## How it differs
+
+- **OSCAR** is an excellent, free desktop application and remains the reference for detailed PAP analysis. PapSee is
+  account-based and runs in the browser, so the computer used for the import does not have to be turned on whenever
+  you want to review or share the data.
+- **Paid cloud services** provide browser access and sharing, but may place longer history and other features behind
+  a subscription. PapSee is free and open source, has no paid history tier, and can be self hosted.
+- **Manufacturer applications such as myAir** are tied to compatible devices from that manufacturer and focus on
+  summary information.
 
 ## What it does
 
-You upload what your machine wrote to the card. PapSee parses it and gives the night back:
+Upload what your machine wrote to the card. PapSee stores and presents it as:
 
 - **The night itself.** Flow waveform, pressure, leak, respiration rate, tidal volume, minute ventilation, and every
   event the device scored, on charts you can zoom and pan with a thumb.
@@ -38,11 +50,11 @@ You upload what your machine wrote to the card. PapSee parses it and gives the n
   the settings the device was running.
 - **History.** A day strip and trends across nights, so a bad night is something you can put in context instead of
   something you stare at alone.
-- **Export.** JSON and CSV, so there is something to actually send your doctor.
+- **Sharing.** Revocable viewer links for a doctor, clinic or anyone else you choose.
+- **Export.** JSON and CSV copies of the stored history.
 - **An example patient.** Click through every screen with generated data, without signing up or uploading anything.
 
-PapSee is in beta and under active development, so expect bugs, rough edges and screens that change under you. If
-you find something wrong, saying so is the most useful thing you can do with it.
+PapSee is in beta. Expect bugs, rough edges and changing screens.
 
 ## Device coverage
 
@@ -145,33 +157,14 @@ set `DATABASE_URL_UNPOOLED` to the same database's direct endpoint. `pnpm db:mig
 migrations need session state transaction pooling does not keep. A Postgres you connect to directly needs only
 `DATABASE_URL`, so leave the second one empty.
 
-## Translations
+### Administration
 
-PapSee ships **English** and **Turkish**, both complete. Every user facing string lives in `messages/`, and the test
-suite fails on a missing key, a blank message or a placeholder that does not match its English original, so neither
-language can quietly fall behind.
+Register an account the usual way, then promote it:
 
-To add a third:
-
-1. Copy `messages/en.json` to `messages/<locale>.json` and translate every value. Keys stay as they are.
-2. Add the locale to `routing.locales` in `src/i18n/routing.ts`.
-3. Import the new catalog in `src/i18n/messages.test.ts` and add it to the `catalogs` map. The suite checks that
-   every configured locale has one.
-4. Add the date-fns locale for the calendar in `src/components/panel/date-field.tsx`.
-5. Write the privacy policy and terms for that language in `src/lib/contract-seeds.ts`, then run
-   `pnpm db:seed-contracts`. Without them, `/<locale>/privacy` and `/<locale>/terms` return 404.
-6. Run `pnpm test`, which will tell you exactly which keys you are still missing.
-
-## Stack
-
-Next.js App Router, React, TypeScript in strict mode, Tailwind, shadcn/ui on Base UI primitives, uPlot for the
-charts, next-intl, next-themes, Better Auth over Drizzle and Postgres, Vitest, pnpm. Versions live in
-`package.json`.
-
-`src/lib/pap/` is a standalone import library with no React, no DOM and no Node built-ins in it. It takes
-`{ path, data: ArrayBuffer }[]` and returns a parsed import, which is why the same code serves the browser and the
-server side commit. If you only care about reading ResMed cards and not about this application, that directory is
-the part worth stealing.
+```bash
+pnpm db:promote-admin someone@example.com
+docker compose run --rm migrate pnpm db:promote-admin someone@example.com   # the Docker path
+```
 
 ## Prior art
 

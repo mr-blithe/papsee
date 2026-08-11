@@ -57,13 +57,17 @@ pnpm test
 ## Read AGENTS.md first
 
 [`AGENTS.md`](AGENTS.md) is written as a brief for AI assistants, but it is the engineering documentation for this
-repository and it applies to humans identically. It is long because the domain is full of things that are wrong in
+repository and it applies to humans identically. It exists because the domain is full of things that are wrong in
 ways that do not crash: a therapy day runs noon to noon, device timestamps carry no time zone and must never touch
 local time, signal labels are matched by longest prefix because the device localises its own, and ResMed writes a
 record count of zero and means something else.
 
-Read at least the sections covering the area you are touching. If it contradicts the code, the code is right and
-the file is the bug: fix it in the same change.
+It holds the rules that apply everywhere. The areas dense enough to have their own file are linked from it and
+live in [`docs/`](docs/): the import library and its device rules, stored imports and who may read them, auth and
+the admin panel, deployment and self hosting, and the charts.
+
+Read `AGENTS.md`, then the file covering the area you are touching. If either contradicts the code, the code is
+right and the document is the bug: fix it in the same change.
 
 ## How the work goes
 

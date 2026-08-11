@@ -167,6 +167,7 @@ export interface StoredDay {
   date: string
   startMs: number
   endMs: number
+  filledAt: Date | null
   summary: DaySummary | null
   settings: DaySettings | null
   sessionBounds: SessionBounds[]
@@ -185,6 +186,7 @@ export async function readStoredDay(userId: string, date: string): Promise<Store
       date: papDay.date,
       startMs: papDay.startMs,
       endMs: papDay.endMs,
+      filledAt: papDay.filledAt,
       summary: papDay.summary,
       settings: papDay.settings,
       sessionBounds: papDay.sessionBounds,

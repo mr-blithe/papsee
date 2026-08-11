@@ -14,6 +14,9 @@ const SIXTEEN_BIT = '#2'
 
 const RECORD_SECONDS = 1
 const DECISECOND_MS = 100
+// The night model plans a pressure in cmH2O and this device writes hectopascals, 98.0665 Pa to the
+// cmH2O, so the fixture converts on the way out exactly as the machine would.
+const HPA_PER_CM_H2O = 0.980665
 
 interface PrismaSignalSpec {
   label: string
@@ -118,6 +121,10 @@ const PRISMA_PARAMETERS = {
 const MODE_APAP = 2
 const SOFT_PAP_STANDARD = 2
 
+function inDeviceUnit(spec: PrismaSignalSpec, value: number): number {
+  return /hPa/i.test(spec.unit) ? value * HPA_PER_CM_H2O : value
+}
+
 function digital(value: number, spec: PrismaSignalSpec): number {
   const span = spec.physicalMax - spec.physicalMin
   const digitalSpan = spec.digitalMax - spec.digitalMin
@@ -147,7 +154,7 @@ function signalFile(night: SyntheticNight, session: SyntheticSession): ArrayBuff
       const samples = spec.hz * RECORD_SECONDS
       return Array.from({ length: samples }, (_, index) => {
         const atMs = session.startMs + record * RECORD_SECONDS * 1000 + (index / spec.hz) * 1000
-        return digital(night.sample(spec.channel, atMs), spec)
+        return digital(inDeviceUnit(spec, night.sample(spec.channel, atMs)), spec)
       })
     }),
   )

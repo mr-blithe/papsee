@@ -20,6 +20,7 @@ export type CommitProgress =
   | { status: 'progress'; committed: string[]; remaining: number; done: boolean; unreadable: string[] }
   | { status: 'unsupported'; brand: CardBrand | null }
   | { status: 'empty' }
+  | { status: 'unreadable' }
   | { status: 'notFound' }
 
 function toPapFile(row: { path: string; bytes: Buffer }): PapFile {
@@ -193,12 +194,13 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
   }
 }
 
+/** One night, parsed from the files stored for it. Returns the dates it could not read, if any. */
 async function fillDay(
   userId: string,
   importId: string,
   brand: CardBrand | null,
   day: { id: string; date: string },
-): Promise<{ unreadable: string[] }> {
+): Promise<string[]> {
   const stored = await db
     .select({ path: papFile.path, bytes: papFile.bytes })
     .from(papFile)
@@ -215,6 +217,30 @@ async function fillDay(
       : null
 
   const built = buildDigitalDay(brand, day.date, stored.map(toPapFile), summary)
+
+  // Files that would not parse leave an empty night behind, and writing that over the row would
+  // report a night somebody slept through as no usage and no AHI. What the card already said about
+  // it is kept instead, and a night the card said nothing about is dropped rather than shown empty.
+  if (built.unreadable.length > 0) {
+    // A dropped day takes its files with it, so what the import says it holds has to follow them out.
+    const dropped = summary ? 0 : stored.length
+
+    await db.transaction(async (tx) => {
+      if (summary) await tx.update(papDay).set({ filledAt: new Date() }).where(eq(papDay.id, day.id))
+      else await tx.delete(papDay).where(eq(papDay.id, day.id))
+
+      await tx
+        .update(papImport)
+        .set({
+          unreadable: sql`array_cat(${papImport.unreadable}, ${built.unreadable})`,
+          fileCount: sql`greatest(${papImport.fileCount} - ${dropped}, 0)`,
+        })
+        .where(eq(papImport.id, importId))
+    })
+
+    return built.unreadable
+  }
+
   const parsed = toPapDay(built.day)
   const row = toDayIndexRow(parsed)
 
@@ -272,16 +298,9 @@ async function fillDay(
       })),
     )
     if (channels.length > 0) await tx.insert(papChannel).values(channels)
-
-    if (built.unreadable.length > 0) {
-      await tx
-        .update(papImport)
-        .set({ unreadable: sql`array_cat(${papImport.unreadable}, ${built.unreadable})` })
-        .where(eq(papImport.id, importId))
-    }
   })
 
-  return { unreadable: built.unreadable }
+  return []
 }
 
 async function pendingDays(userId: string, importId: string) {
@@ -328,9 +347,9 @@ export async function advanceCommit(userId: string, importId: string, budgetMs: 
   let pending = await pendingDays(userId, importId)
   while (pending.length > 0) {
     const day = pending[0]
-    const filled = await fillDay(userId, importId, brand, day)
-    committed.push(day.date)
-    unreadable.push(...filled.unreadable)
+    const failed = await fillDay(userId, importId, brand, day)
+    if (failed.length === 0) committed.push(day.date)
+    unreadable.push(...failed)
     pending = pending.slice(1)
 
     if (Date.now() - startedAt >= budgetMs) break
@@ -339,6 +358,19 @@ export async function advanceCommit(userId: string, importId: string, budgetMs: 
   const remaining = pending.length
 
   if (remaining === 0) {
+    const [kept] = await db
+      .select({ one: sql<number>`1` })
+      .from(papDay)
+      .where(and(eq(papDay.userId, userId), eq(papDay.importId, importId)))
+      .limit(1)
+
+    // Every night on the card failed to parse. There is nothing to open, so the import is dropped
+    // rather than left behind as bytes no screen will ever read.
+    if (!kept) {
+      await db.delete(papImport).where(and(eq(papImport.id, importId), eq(papImport.userId, userId)))
+      return { status: 'unreadable' }
+    }
+
     await db.update(papImport).set({ committedAt: new Date() }).where(eq(papImport.id, importId))
   }
 

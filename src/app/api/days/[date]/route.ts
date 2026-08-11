@@ -61,7 +61,11 @@ export async function GET(request: Request, context: RouteContext<'/api/days/[da
   const stored = await readStoredDay(userId, date)
   if (!stored) return apiError('notFound')
 
-  const etag = `"${date}-${stored.channels.length}-${stored.endMs}"`
+  // The browser cache is not partitioned by account, so a validator built from what a night looks
+  // like would collide between two readers on the same machine: every summary only night of a date
+  // carries the same channel count and the same noon. The row's own id cannot, and it is replaced
+  // whenever the night is imported again, which is also what stops a re-import serving from cache.
+  const etag = `"${stored.id}-${stored.filledAt?.getTime() ?? 0}"`
   if (request.headers.get('if-none-match') === etag) return new Response(null, { status: 304, headers: { etag } })
 
   const card: DayPayloadCard = {
