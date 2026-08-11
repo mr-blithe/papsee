@@ -7,16 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { BRAND_NAMES, RECOGNISED_BRANDS } from '@/lib/pap'
 import { SOURCE_URL } from '@/lib/site-url'
-import { cn } from '@/lib/utils'
 import { HeroPreview } from './hero-preview'
 import { SignalPreview } from './signal-preview'
-
-const BENEFITS = [
-  { title: 'accessTitle', body: 'accessBody', color: 'bg-signal-flow' },
-  { title: 'cardFreeTitle', body: 'cardFreeBody', color: 'bg-signal-respiration' },
-  { title: 'sharingTitle', body: 'sharingBody', color: 'bg-signal-pressure' },
-  { title: 'securityTitle', body: 'securityBody', color: 'bg-signal-leak' },
-] as const
+import { WhyPapSeeSection } from './why-papsee-section'
 
 const STEPS = [
   { title: 'stepBringTitle', body: 'stepBringBody' },
@@ -124,37 +117,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        <section id="why" className="border-y border-border bg-muted/20 scroll-mt-16">
-          <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20 lg:px-8 lg:py-24">
-            <div>
-              <p className="text-xs font-semibold tracking-[0.16em] text-signal-respiration uppercase">
-                {t('whyEyebrow')}
-              </p>
-              <h2 className="mt-4 max-w-xl text-3xl leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-4xl">
-                {t('whyTitle')}
-              </h2>
-              <p className="mt-5 max-w-xl leading-7 text-muted-foreground">{t('whyBody')}</p>
-            </div>
-
-            <ol className="divide-y divide-border border-y border-border">
-              {BENEFITS.map((benefit, index) => (
-                <li
-                  key={benefit.title}
-                  className="grid grid-cols-[2rem_1fr] gap-4 py-6 sm:grid-cols-[3rem_1fr] sm:py-7"
-                >
-                  <div className="pt-1">
-                    <span className={cn('block h-0.5 w-6', benefit.color)} aria-hidden />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground tabular-nums">0{index + 1}</p>
-                    <h3 className="mt-2 text-base font-semibold tracking-tight">{t(benefit.title)}</h3>
-                    <p className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground">{t(benefit.body)}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
+        <WhyPapSeeSection />
 
         <section id="signals" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24 scroll-mt-16">
           <div className="grid gap-10">

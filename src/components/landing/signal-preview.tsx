@@ -4,6 +4,7 @@ import { ScreenshotPreview } from './screenshot-preview'
 const PREVIEW_WIDTH = 2532
 const PREVIEW_HEIGHT = 1308
 const PREVIEW_SRC = '/images/therapy-detail.png'
+const LOCALIZED_PREVIEW_SOURCES = { tr: '/images/therapy-detail-tr.png' }
 
 export function SignalPreview() {
   const landing = useTranslations('Landing')
@@ -15,6 +16,7 @@ export function SignalPreview() {
       height={PREVIEW_HEIGHT}
       label={landing('signalPreviewLabel')}
       sizes="(max-width: 1279px) calc(100vw - 2rem), 80rem"
+      localizedSources={LOCALIZED_PREVIEW_SOURCES}
     />
   )
 }

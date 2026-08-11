@@ -2,9 +2,10 @@
 
 import { Maximize2, Minimize2 } from 'lucide-react'
 import Image from 'next/image'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import type { Locale } from '@/i18n/routing'
 
 interface ScreenshotPreviewProps {
   src: string
@@ -12,11 +13,22 @@ interface ScreenshotPreviewProps {
   height: number
   label: string
   sizes: string
+  localizedSources?: Partial<Record<Locale, string>>
   preload?: boolean
 }
 
-export function ScreenshotPreview({ src, width, height, label, sizes, preload = false }: ScreenshotPreviewProps) {
+export function ScreenshotPreview({
+  src,
+  width,
+  height,
+  label,
+  sizes,
+  localizedSources,
+  preload = false,
+}: ScreenshotPreviewProps) {
   const actions = useTranslations('Actions')
+  const locale = useLocale()
+  const activeSrc = localizedSources?.[locale as Locale] ?? src
   const triggerLabel = `${actions('fullscreen')}: ${label}`
 
   return (
@@ -31,7 +43,7 @@ export function ScreenshotPreview({ src, width, height, label, sizes, preload = 
         }
       >
         <Image
-          src={src}
+          src={activeSrc}
           width={width}
           height={height}
           alt=""
@@ -62,7 +74,7 @@ export function ScreenshotPreview({ src, width, height, label, sizes, preload = 
         </header>
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-black p-2 sm:p-4">
           <Image
-            src={src}
+            src={activeSrc}
             width={width}
             height={height}
             alt={label}
