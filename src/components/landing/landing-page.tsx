@@ -1,12 +1,14 @@
 import { Star } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { ExampleButton } from '@/components/panel/example-button'
+import { SITE_CONTAINER } from '@/components/site-container'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { BRAND_NAMES, RECOGNISED_BRANDS } from '@/lib/pap'
 import { SOURCE_URL } from '@/lib/site-url'
+import { cn } from '@/lib/utils'
 import { HeroPreview } from './hero-preview'
 import { SignalPreview } from './signal-preview'
 import { WhyPapSeeSection } from './why-papsee-section'
@@ -35,7 +37,9 @@ function SourceSection({ sourceUrl }: { sourceUrl: string }) {
 
   return (
     <section id="source" className="border-b border-border scroll-mt-16">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-16 lg:px-8">
+      <div
+        className={cn(SITE_CONTAINER, 'grid gap-8 py-16 sm:py-20 lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-16')}
+      >
         <div>
           <p className="text-xs font-semibold tracking-[0.16em] text-signal-pressure uppercase">{t('sourceEyebrow')}</p>
           <h2 className="mt-4 max-w-xl text-3xl leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-4xl">
@@ -83,7 +87,12 @@ export function LandingPage() {
 
       <main>
         <section className="relative">
-          <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.75fr_1.25fr] lg:gap-12 lg:px-8 lg:py-24">
+          <div
+            className={cn(
+              SITE_CONTAINER,
+              'grid items-center gap-12 py-16 sm:py-20 lg:grid-cols-[0.75fr_1.25fr] lg:gap-12 lg:py-24',
+            )}
+          >
             <div className="max-w-2xl">
               <p className="text-xs font-semibold tracking-[0.16em] text-signal-flow uppercase">{t('eyebrow')}</p>
               <h1 className="mt-5 text-4xl leading-[1.04] font-semibold tracking-[-0.045em] text-balance sm:text-5xl lg:text-6xl">
@@ -105,21 +114,15 @@ export function LandingPage() {
               </ul>
             </div>
 
-            <div className="relative lg:mr-[-2rem]">
-              <div
-                className="absolute -inset-3 rounded-3xl border border-signal-flow/15 bg-signal-flow/5"
-                aria-hidden
-              />
-              <div className="relative">
-                <HeroPreview />
-              </div>
+            <div className="rounded-3xl border border-signal-flow/15 bg-signal-flow/5 p-3">
+              <HeroPreview />
             </div>
           </div>
         </section>
 
         <WhyPapSeeSection />
 
-        <section id="signals" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24 scroll-mt-16">
+        <section id="signals" className={cn(SITE_CONTAINER, 'py-16 sm:py-20 lg:py-24 scroll-mt-16')}>
           <div className="grid gap-10">
             <div className="max-w-2xl">
               <p className="text-xs font-semibold tracking-[0.16em] text-signal-pressure uppercase">
@@ -135,7 +138,7 @@ export function LandingPage() {
         </section>
 
         <section id="how" className="border-y border-border bg-card scroll-mt-16">
-          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+          <div className={cn(SITE_CONTAINER, 'py-16 sm:py-20 lg:py-24')}>
             <div className="max-w-2xl">
               <h2 className="text-3xl leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-4xl">
                 {t('howTitle')}
@@ -173,14 +176,16 @@ export function LandingPage() {
 
         {SOURCE_URL ? <SourceSection sourceUrl={SOURCE_URL} /> : null}
 
-        <section className="mx-auto max-w-4xl px-4 py-20 text-center sm:px-6 sm:py-28">
-          <p className="text-xs font-semibold tracking-[0.16em] text-signal-flow">{metadata('appName')}</p>
-          <h2 className="mt-4 text-4xl leading-tight font-semibold tracking-[-0.04em] text-balance sm:text-5xl">
-            {t('closingTitle')}
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl leading-7 text-muted-foreground">{t('closingBody')}</p>
-          <div className="mt-8">
-            <CtaPair centered />
+        <section className={cn(SITE_CONTAINER, 'py-20 text-center sm:py-28')}>
+          <div className="mx-auto max-w-4xl">
+            <p className="text-xs font-semibold tracking-[0.16em] text-signal-flow">{metadata('appName')}</p>
+            <h2 className="mt-4 text-4xl leading-tight font-semibold tracking-[-0.04em] text-balance sm:text-5xl">
+              {t('closingTitle')}
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl leading-7 text-muted-foreground">{t('closingBody')}</p>
+            <div className="mt-8">
+              <CtaPair centered />
+            </div>
           </div>
         </section>
       </main>

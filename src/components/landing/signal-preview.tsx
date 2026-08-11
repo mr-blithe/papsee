@@ -3,15 +3,23 @@ import { ScreenshotPreview } from './screenshot-preview'
 
 const PREVIEW_WIDTH = 2532
 const PREVIEW_HEIGHT = 1308
-const PREVIEW_SRC = '/images/therapy-detail.png'
-const LOCALIZED_PREVIEW_SOURCES = { tr: '/images/therapy-detail-tr.png' }
+const PREVIEW_SOURCES = {
+  light: '/images/therapy-detail-light.png',
+  dark: '/images/therapy-detail.png',
+}
+const LOCALIZED_PREVIEW_SOURCES = {
+  tr: {
+    light: '/images/therapy-detail-tr-light.png',
+    dark: '/images/therapy-detail-tr.png',
+  },
+}
 
 export function SignalPreview() {
   const landing = useTranslations('Landing')
 
   return (
     <ScreenshotPreview
-      src={PREVIEW_SRC}
+      sources={PREVIEW_SOURCES}
       width={PREVIEW_WIDTH}
       height={PREVIEW_HEIGHT}
       label={landing('signalPreviewLabel')}

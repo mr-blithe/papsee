@@ -6,29 +6,86 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import type { Locale } from '@/i18n/routing'
+import { cn } from '@/lib/utils'
+
+interface ScreenshotThemeSources {
+  light: string
+  dark: string
+}
 
 interface ScreenshotPreviewProps {
-  src: string
+  sources: ScreenshotThemeSources
   width: number
   height: number
   label: string
   sizes: string
-  localizedSources?: Partial<Record<Locale, string>>
-  preload?: boolean
+  localizedSources?: Partial<Record<Locale, ScreenshotThemeSources>>
+  highPriority?: boolean
+}
+
+interface ThemeImageProps {
+  sources: ScreenshotThemeSources
+  width: number
+  height: number
+  alt: string
+  sizes: string
+  className: string
+  ariaHidden?: boolean
+  highPriority?: boolean
+}
+
+function ThemeImage({
+  sources,
+  width,
+  height,
+  alt,
+  sizes,
+  className,
+  ariaHidden = false,
+  highPriority = false,
+}: ThemeImageProps) {
+  const fetchPriority = highPriority ? 'high' : undefined
+
+  return (
+    <>
+      <Image
+        src={sources.light}
+        width={width}
+        height={height}
+        alt={alt}
+        aria-hidden={ariaHidden || undefined}
+        fetchPriority={fetchPriority}
+        sizes={sizes}
+        data-theme-image="light"
+        className={cn(className, 'dark:hidden')}
+      />
+      <Image
+        src={sources.dark}
+        width={width}
+        height={height}
+        alt={alt}
+        aria-hidden={ariaHidden || undefined}
+        fetchPriority={fetchPriority}
+        sizes={sizes}
+        data-theme-image="dark"
+        className={cn(className, 'hidden dark:block')}
+      />
+    </>
+  )
 }
 
 export function ScreenshotPreview({
-  src,
+  sources,
   width,
   height,
   label,
   sizes,
   localizedSources,
-  preload = false,
+  highPriority = false,
 }: ScreenshotPreviewProps) {
   const actions = useTranslations('Actions')
   const locale = useLocale()
-  const activeSrc = localizedSources?.[locale as Locale] ?? src
+  const activeSources = localizedSources?.[locale as Locale] ?? sources
   const triggerLabel = `${actions('fullscreen')}: ${label}`
 
   return (
@@ -42,13 +99,13 @@ export function ScreenshotPreview({
           />
         }
       >
-        <Image
-          src={activeSrc}
+        <ThemeImage
+          sources={activeSources}
           width={width}
           height={height}
           alt=""
-          aria-hidden
-          preload={preload}
+          ariaHidden
+          highPriority={highPriority}
           sizes={sizes}
           className="h-auto w-full rounded-xl"
         />
@@ -73,8 +130,8 @@ export function ScreenshotPreview({
           </DialogClose>
         </header>
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-black p-2 sm:p-4">
-          <Image
-            src={activeSrc}
+          <ThemeImage
+            sources={activeSources}
             width={width}
             height={height}
             alt={label}

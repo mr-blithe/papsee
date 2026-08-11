@@ -1,7 +1,9 @@
 import { useTranslations } from 'next-intl'
 import { Wordmark } from '@/components/logo'
+import { SITE_CONTAINER } from '@/components/site-container'
 import { Link } from '@/i18n/navigation'
 import { SOURCE_URL } from '@/lib/site-url'
+import { cn } from '@/lib/utils'
 
 const LEGAL_LINKS = [
   { href: '/privacy', key: 'privacy' },
@@ -15,7 +17,7 @@ export function SiteFooter() {
 
   return (
     <footer className="border-t border-border">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 sm:px-6 lg:px-8">
+      <div className={cn(SITE_CONTAINER, 'flex flex-col gap-4 py-6')}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <Wordmark markClassName="text-signal-flow" />
           <p className="max-w-2xl text-xs leading-5 text-muted-foreground sm:ml-auto sm:text-right">

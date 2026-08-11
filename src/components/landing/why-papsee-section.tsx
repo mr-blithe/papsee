@@ -1,4 +1,5 @@
 import { useTranslations } from 'next-intl'
+import { SITE_CONTAINER } from '@/components/site-container'
 import { cn } from '@/lib/utils'
 
 const REASONS = [
@@ -15,7 +16,7 @@ export function WhyPapSeeSection() {
 
   return (
     <section id="why" className="border-y border-border bg-muted/20 scroll-mt-16">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
+      <div className={cn(SITE_CONTAINER, 'py-16 sm:py-20 lg:py-24')}>
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-end lg:gap-20">
           <div>
             <p className="text-xs font-semibold tracking-[0.16em] text-signal-respiration uppercase">

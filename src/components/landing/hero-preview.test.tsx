@@ -18,6 +18,7 @@ describe('landing hero preview', () => {
 
     expect(markup).toContain(`aria-label="${en.Actions.fullscreen}: ${en.Landing.previewLabel}"`)
     expect(markup).toContain('example-overview-content.png')
+    expect(markup).toContain('example-overview-content-light.png')
   })
 
   it('shows the supplied therapy screenshot in the signals preview', () => {
@@ -29,6 +30,7 @@ describe('landing hero preview', () => {
 
     expect(markup).toContain(`aria-label="${en.Actions.fullscreen}: ${en.Landing.signalPreviewLabel}"`)
     expect(markup).toContain('therapy-detail.png')
+    expect(markup).toContain('therapy-detail-light.png')
   })
 
   it('uses Turkish screenshots for the Turkish landing page', () => {
@@ -40,7 +42,9 @@ describe('landing hero preview', () => {
     )
 
     expect(markup).toContain('example-overview-content-tr.png')
+    expect(markup).toContain('example-overview-content-tr-light.png')
     expect(markup).toContain('therapy-detail-tr.png')
+    expect(markup).toContain('therapy-detail-tr-light.png')
   })
 
   it('keeps the English screenshots as the fallback for an unmatched locale', () => {
@@ -52,7 +56,24 @@ describe('landing hero preview', () => {
     )
 
     expect(markup).toContain('example-overview-content.png')
+    expect(markup).toContain('example-overview-content-light.png')
     expect(markup).toContain('therapy-detail.png')
+    expect(markup).toContain('therapy-detail-light.png')
+  })
+
+  it('lets the document theme select one image without waiting for client state', () => {
+    const container = document.createElement('div')
+    container.innerHTML = renderToStaticMarkup(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <HeroPreview />
+      </NextIntlClientProvider>,
+    )
+
+    const images = container.querySelectorAll('img')
+
+    expect(images).toHaveLength(2)
+    expect(images[0].classList).toContain('dark:hidden')
+    expect(images[1].classList).toContain('dark:block')
   })
 
   it('shows an icon-only full-screen affordance on interaction', () => {

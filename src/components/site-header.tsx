@@ -2,11 +2,13 @@ import { SiGithub } from '@icons-pack/react-simple-icons'
 import { getTranslations } from 'next-intl/server'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { Wordmark } from '@/components/logo'
+import { SITE_CONTAINER } from '@/components/site-container'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { Button } from '@/components/ui/button'
 import { Link } from '@/i18n/navigation'
 import { getSession } from '@/lib/session'
 import { SOURCE_URL } from '@/lib/site-url'
+import { cn } from '@/lib/utils'
 
 export async function SiteHeader() {
   const landing = await getTranslations('Landing')
@@ -15,7 +17,7 @@ export async function SiteHeader() {
 
   return (
     <header className="border-b border-border/70 bg-background/90 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:px-6 lg:px-8">
+      <div className={cn(SITE_CONTAINER, 'flex h-16 items-center gap-2')}>
         <Link href="/" aria-label={metadata('appName')}>
           <Wordmark markClassName="text-signal-flow" />
         </Link>
@@ -27,7 +29,7 @@ export async function SiteHeader() {
             {landing('navHow')}
           </Link>
         </nav>
-        <div className="ml-auto -mr-2 flex items-center gap-1 lg:mr-[-6.25rem] xl:mr-[-8.25rem]">
+        <div className="-mr-2 ml-auto flex items-center gap-1">
           <Button
             variant="ghost"
             nativeButton={false}
