@@ -91,8 +91,12 @@ export function ChartStack({ day, syncKey, fullscreenSyncKey, range, onRangeChan
   const domains = useMemo(() => {
     const map = new Map<ChannelId, [number, number]>()
     for (const chart of available) {
-      const spans = chart.channels.map((channel) =>
-        decimate(day.sessions, channel.id, day.startMs, day.endMs, DOMAIN_POINTS),
+      const spans = decimate(
+        day.sessions,
+        chart.channels.map((channel) => channel.id),
+        day.startMs,
+        day.endMs,
+        DOMAIN_POINTS,
       )
       const min = Math.min(...spans.map((span) => span.min))
       const max = Math.max(...spans.map((span) => span.max))
@@ -113,9 +117,16 @@ export function ChartStack({ day, syncKey, fullscreenSyncKey, range, onRangeChan
       const domain = domains.get(chart.id)
       if (!domain) continue
 
+      const series = decimate(
+        day.sessions,
+        chart.channels.map((channel) => channel.id),
+        fromMs,
+        toMs,
+        TARGET_POINTS,
+      )
       const drawn = chart.channels
-        .map((channel) => ({ channel, data: decimate(day.sessions, channel.id, fromMs, toMs, TARGET_POINTS) }))
-        .filter((entry) => entry.data.x.length > 0)
+        .map((channel, index) => ({ channel, data: series[index] }))
+        .filter((entry) => entry.data.sampleCount > 0)
       if (drawn.length === 0) continue
 
       built.push({

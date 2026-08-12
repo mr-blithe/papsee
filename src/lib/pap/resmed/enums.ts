@@ -2,6 +2,7 @@ export const AIRSENSE_11_MIN_MODEL = 39000
 
 const OFF_ON = ['Off', 'On']
 const OFF_ON_AUTO = ['Off', 'On', 'Auto']
+const EPR_MODES = ['Off', 'Ramp Only', 'Full Time']
 
 const UNKNOWN_MODE = 16
 
@@ -45,6 +46,7 @@ export interface EnumDecoder {
   onOff(raw: number | null): string
   onOffAuto(raw: number | null): string
   eprType(raw: number | null): string
+  eprMode(raw: number | null): string
   rampMode(raw: number | null): string
   mask(raw: number | null): string
   climateControl(raw: number | null): string
@@ -61,6 +63,7 @@ const UNKNOWN_GENERATION: EnumDecoder = {
   onOff: () => UNKNOWN,
   onOffAuto: () => UNKNOWN,
   eprType: () => UNKNOWN,
+  eprMode: () => UNKNOWN,
   rampMode: () => UNKNOWN,
   mask: () => UNKNOWN,
   climateControl: () => UNKNOWN,
@@ -81,7 +84,10 @@ export function enumDecoder(modelNumber: number | null): EnumDecoder {
     },
     onOff: (raw) => label(OFF_ON, shift(raw)),
     onOffAuto: (raw) => label(OFF_ON_AUTO, shift(raw)),
-    eprType: (raw) => label(['Off', 'Ramp Only', 'Full Time'], raw === null ? null : isAirSense11 ? raw : raw + 1),
+    eprType: (raw) => label(EPR_MODES, raw === null ? null : isAirSense11 ? raw : raw + 1),
+    // The S9 writes the relief mode itself rather than the dotted signal's offset encoding, so this
+    // one takes the reading as it stands.
+    eprMode: (raw) => label(EPR_MODES, raw),
     rampMode: (raw) => label(OFF_ON_AUTO, shift(raw)),
     mask(raw) {
       if (raw === null) return UNKNOWN

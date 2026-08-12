@@ -22,6 +22,16 @@ export function readOnlyErrorCode(view: Exclude<PanelView, 'account'>): 'readOnl
   return view === 'demo' ? 'readOnlyDemo' : 'readOnlyShare'
 }
 
+/**
+ * Identity of whose nights a panel screen is reading. Leaving a shared view or the example patient
+ * swaps the context while the reader stays on the same route, which is not a navigation and so does
+ * not remount anything: passed as a `key`, this discards the previous context's loaded nights
+ * instead of leaving them on screen under the new one's heading.
+ */
+export function panelKey(context: PanelContext): string {
+  return `${context.view}:${context.userId ?? ''}`
+}
+
 // The layout and the page below it both ask, and a shared view answers from the database, so the
 // lookup is deduplicated per request the way getSession is.
 const readShare = cache(async (token: string) => findShareByTokenHash(hashShareToken(token)))

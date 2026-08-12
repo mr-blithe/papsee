@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildEdf, type EdfSignalSpec } from '../edf/writer'
 import { parseStr } from './str'
 
+const S9_AUTOSET = 36005
 const AIRSENSE_10 = 37028
 const AIRSENSE_11 = 39410
 
@@ -230,5 +231,62 @@ describe('a calendar day the device wrote but nobody slept through', () => {
     )
 
     expect(calendar.days).toHaveLength(2)
+  })
+})
+
+/**
+ * Two generations spell exhale pressure relief differently and encode it differently. The S9 writes a
+ * bare `EPR` holding the relief mode itself; the AirSense writes dotted signals whose type is offset
+ * by one and which carry a separate enable and clinician enable. OSCAR reads the bare pair first and
+ * only applies the enable gate when the dotted signals are there (resmed_loader.cpp, readSTRrecord),
+ * and its own channel table gives the bare signal the options 0 Off, 1 Ramp Only, 2 Full Time.
+ */
+describe('exhale pressure relief across the two STR spellings', () => {
+  it.each([
+    [0, 'Off', 'Off'],
+    [1, 'Ramp Only', 'On'],
+    [2, 'Full Time', 'On'],
+  ])('reads a bare S9 EPR of %i as %s rather than reporting relief that is running as off', (raw, type, enabled) => {
+    const day = strDay({ Mode: 1, EPR: raw, 'EPR Level': 3 }, S9_AUTOSET)
+
+    expect(day.settings.eprType).toBe(type)
+    expect(day.settings.eprEnabled).toBe(enabled)
+  })
+
+  it('reads the S9 relief level, which sits behind the same gate the type does', () => {
+    const day = strDay({ Mode: 1, EPR: 2, 'EPR Level': 3 }, S9_AUTOSET)
+
+    expect(day.settings.eprLevel).toBe(3)
+  })
+
+  it('keeps reading the AirSense signals, whose type is written one lower than the S9 writes it', () => {
+    const day = strDay(
+      { Mode: 1, 'S.EPR.EPREnable': 1, 'S.EPR.ClinEnable': 1, 'S.EPR.EPRType': 1, 'S.EPR.Level': 3 },
+      AIRSENSE_10,
+    )
+
+    expect(day.settings.eprEnabled).toBe('On')
+    expect(day.settings.eprType).toBe('Full Time')
+    expect(day.settings.eprLevel).toBe(3)
+  })
+
+  it('reports relief a clinician switched off as off, whatever type the device still holds', () => {
+    const day = strDay(
+      { Mode: 1, 'S.EPR.EPREnable': 1, 'S.EPR.ClinEnable': 0, 'S.EPR.EPRType': 1, 'S.EPR.Level': 3 },
+      AIRSENSE_10,
+    )
+
+    expect(day.settings.eprType).toBe('Off')
+    expect(day.settings.eprLevel).toBeNull()
+  })
+
+  // Claiming a device runs no relief is an assertion about the therapy. A card that says nothing
+  // about it has to admit that, the way every other setting read from a missing signal does.
+  it('admits it does not know when the card carries no relief signal at all', () => {
+    const day = strDay({ Mode: 1, 'S.AS.MinPress': 8 }, S9_AUTOSET)
+
+    expect(day.settings.eprType).toBe('Unknown')
+    expect(day.settings.eprEnabled).toBe('Unknown')
+    expect(day.settings.eprLevel).toBeNull()
   })
 })

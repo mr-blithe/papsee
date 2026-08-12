@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest'
-import { importPapData } from '@/lib/pap'
+import { buildDigitalDay, importPapData, toPapDay } from '@/lib/pap'
 import { writeSyntheticCard } from '@/lib/pap/synthetic/resmed-card'
 import { toDayIndexRow } from './day-index'
 import {
@@ -34,7 +34,11 @@ function exportedDays(dates: string[] = DATES): ExportedDay[] {
     .map((row) => ({ ...row, sessionCount: row.sessionBounds.length }))
 }
 
-function summaryOnlyNight(): ExportedDay {
+/**
+ * A night whose waveforms were read but whose card said nothing about it, so every column fed by the
+ * card summary is empty while the clock and the indices are real.
+ */
+function nightWithoutCardSummary(): ExportedDay {
   return {
     date: '2026-08-07',
     startMs: Date.UTC(2026, 7, 7, 23, 14, 5),
@@ -47,12 +51,23 @@ function summaryOnlyNight(): ExportedDay {
     reraIndex: 0.9,
     leakP95: null,
     pressureP95: null,
-    sessionCount: 0,
+    sessionCount: 1,
     summary: null,
     settings: null,
-    sessionBounds: [],
+    sessionBounds: [{ startMs: Date.UTC(2026, 7, 7, 23, 14, 5), endMs: Date.UTC(2026, 7, 8, 6, 2, 30) }],
     events: [],
   }
+}
+
+/**
+ * The shape `beginCommit` writes for a therapy day before anything has been parsed into it, built
+ * the way it is built there so the fixture cannot drift from it. With no session to measure from,
+ * `buildDigitalDay` anchors both ends of the night to noon.
+ */
+function nightWithoutSessions(): ExportedDay {
+  const row = toDayIndexRow(toPapDay(buildDigitalDay('resmed', '2026-08-07', [], null).day))
+
+  return { ...row, sessionCount: row.sessionBounds.length }
 }
 
 const anImport: ExportedImport = {
@@ -106,14 +121,14 @@ describe('exported tables', () => {
 
 describe('the nights table', () => {
   it('reads a night on the clock the device showed, not the clock of the machine exporting it', () => {
-    const [row] = nightsTable([summaryOnlyNight()]).rows
+    const [row] = nightsTable([nightWithoutCardSummary()]).rows
 
     expect(row[1]).toBe('2026-08-07 23:14:05')
     expect(row[2]).toBe('2026-08-08 06:02:30')
   })
 
   it('leaves a summary only night blank rather than reporting a pressure of zero', () => {
-    const table = nightsTable([summaryOnlyNight()])
+    const table = nightsTable([nightWithoutCardSummary()])
     const [row] = table.rows
 
     const maskPressureMedian = table.columns.indexOf('Export.maskPressureMedian')
@@ -125,11 +140,24 @@ describe('the nights table', () => {
   })
 
   it('drops the drift a float32 column stores instead of writing 4.199999809265137 into a spreadsheet', () => {
-    const table = nightsTable([summaryOnlyNight()])
+    const table = nightsTable([nightWithoutCardSummary()])
     const [row] = table.rows
 
     expect(row[table.columns.indexOf('Export.ahi')]).toBe(4.2)
     expect(row[table.columns.indexOf('Export.usageMinutes')]).toBe(408.2)
+  })
+
+  // Both ends of such a night sit on the noon the therapy day is anchored to, which is a bookkeeping
+  // value and not a reading. Printed under these two headings it claims the reader put the mask on at
+  // midday and took it off the same second, on a row that may report hours of usage beside it.
+  it('leaves the mask on and mask off columns empty for a night it read no session from', () => {
+    const table = nightsTable([nightWithoutSessions()])
+    const [row] = table.rows
+
+    expect(table.columns[1]).toBe('Export.nightStart')
+    expect(table.columns[2]).toBe('Export.nightEnd')
+    expect(row[1]).toBeNull()
+    expect(row[2]).toBeNull()
   })
 
   it('writes one row per night, in the order the nights were read', () => {

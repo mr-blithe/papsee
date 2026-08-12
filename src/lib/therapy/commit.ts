@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNotNull, isNull, ne, notExists, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNotNull, isNull, lt, ne, notExists, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { papChannel, papDay, papEvent, papFile, papImport } from '@/lib/db/pap-schema'
 import {
@@ -15,6 +15,16 @@ import {
 import { toDayIndexRow } from './day-index'
 
 const EMPTY_HEAD = new Uint8Array(0)
+
+// Nights seeded per statement. The opening slice writes one row per night the card covers, and a card
+// holding years of them would otherwise be either one round trip per night or a single statement
+// carrying more bind parameters than Postgres accepts.
+const DAY_SEED_BATCH = 200
+
+// How long an import that holds no nights has to have sat there before it counts as abandoned rather
+// than in flight. Well clear of `COMMIT_BUDGET_MS` and of the retries the client makes on top of it,
+// because the cost of sweeping too early is deleting an upload somebody is still making.
+const ABANDONED_IMPORT_MS = 60 * 60_000
 
 export type CommitProgress =
   | { status: 'progress'; committed: string[]; remaining: number; done: boolean; unreadable: string[] }
@@ -112,41 +122,55 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
 
   const summaries = new Map(metadata.daySummaries.map((day) => [day.date, day]))
 
+  const pathsByDate = new Map<string, string[]>()
+  for (const [path, date] of assignment) {
+    if (date === null) continue
+    const bucket = pathsByDate.get(date)
+    if (bucket) bucket.push(path)
+    else pathsByDate.set(date, [path])
+  }
+
+  const seeded = dates.map((date) => {
+    const row = toDayIndexRow(toPapDay(buildDigitalDay(brand, date, [], summaries.get(date) ?? null).day))
+
+    return {
+      userId,
+      importId,
+      date,
+      startMs: row.startMs,
+      endMs: row.endMs,
+      usageMinutes: row.usageMinutes,
+      ahi: row.ahi,
+      oai: row.oai,
+      cai: row.cai,
+      hi: row.hi,
+      reraIndex: row.reraIndex,
+      leakP95: row.leakP95,
+      pressureP95: row.pressureP95,
+      summary: row.summary,
+      settings: row.settings,
+      sessionBounds: [],
+      filledAt: datalogDates.has(date) ? null : new Date(),
+    }
+  })
+
   await db.transaction(async (tx) => {
     await tx.delete(papDay).where(and(eq(papDay.userId, userId), inArray(papDay.date, replaced)))
 
-    for (const date of dates) {
-      const summary = summaries.get(date) ?? null
-      const row = toDayIndexRow(toPapDay(buildDigitalDay(brand, date, [], summary).day))
-      const [day] = await tx
+    for (let start = 0; start < seeded.length; start += DAY_SEED_BATCH) {
+      const written = await tx
         .insert(papDay)
-        .values({
-          userId,
-          importId,
-          date,
-          startMs: row.startMs,
-          endMs: row.endMs,
-          usageMinutes: row.usageMinutes,
-          ahi: row.ahi,
-          oai: row.oai,
-          cai: row.cai,
-          hi: row.hi,
-          reraIndex: row.reraIndex,
-          leakP95: row.leakP95,
-          pressureP95: row.pressureP95,
-          summary: row.summary,
-          settings: row.settings,
-          sessionBounds: [],
-          filledAt: datalogDates.has(date) ? null : new Date(),
-        })
-        .returning({ id: papDay.id })
+        .values(seeded.slice(start, start + DAY_SEED_BATCH))
+        .returning({ id: papDay.id, date: papDay.date })
 
-      const dayPaths = [...assignment.entries()].filter(([, value]) => value === date).map(([path]) => path)
-      if (dayPaths.length > 0) {
-        await tx
-          .update(papFile)
-          .set({ dayId: day.id })
-          .where(and(eq(papFile.importId, importId), inArray(papFile.path, dayPaths)))
+      for (const day of written) {
+        const dayPaths = pathsByDate.get(day.date)
+        if (dayPaths) {
+          await tx
+            .update(papFile)
+            .set({ dayId: day.id })
+            .where(and(eq(papFile.importId, importId), inArray(papFile.path, dayPaths)))
+        }
       }
     }
 
@@ -169,12 +193,15 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
       .where(eq(papImport.id, importId))
 
     // A night that changed hands may have emptied its old import. Sweeping here rather than at the
-    // end means an abandoned commit cannot leave a stranger's bytes behind forever.
+    // end means an abandoned commit cannot leave a stranger's bytes behind forever. An import that
+    // never committed is exactly the abandoned case, so it has to be swept on its age instead: a
+    // commit runs in slices and the client drives them, so one opened moments ago in another tab may
+    // still be on its way and must be left alone.
     await tx.delete(papImport).where(
       and(
         eq(papImport.userId, userId),
         ne(papImport.id, importId),
-        isNotNull(papImport.committedAt),
+        or(isNotNull(papImport.committedAt), lt(papImport.createdAt, new Date(Date.now() - ABANDONED_IMPORT_MS))),
         notExists(
           tx
             .select({ one: sql`1` })

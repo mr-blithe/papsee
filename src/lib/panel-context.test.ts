@@ -25,7 +25,7 @@ vi.mock('./therapy/repository', () => ({
   findShareByTokenHash: (tokenHash: string) => findShareByTokenHash(tokenHash),
 }))
 
-const { getPanelContext, readOnlyErrorCode } = await import('./panel-context')
+const { getPanelContext, panelKey, readOnlyErrorCode } = await import('./panel-context')
 
 const OWNER_ID = 'user_owner'
 const READER_ID = 'user_reader'
@@ -215,5 +215,42 @@ describe('refusing to write', () => {
   it('tells a reader which view is holding them back', () => {
     expect(readOnlyErrorCode('demo')).toBe('readOnlyDemo')
     expect(readOnlyErrorCode('shared')).toBe('readOnlyShare')
+  })
+})
+
+/**
+ * The panel screens fetch their nights once on mount, and leaving a shared view or the example
+ * patient swaps the context without leaving the page. This key is what tells React the screen is a
+ * different screen now, so two contexts that read different nights must never share one.
+ */
+describe('telling one panel context from another', () => {
+  const IN_AN_HOUR = new Date('2026-08-12T12:00:00.000Z')
+
+  it('separates a shared view from the reader own account', () => {
+    expect(panelKey({ view: 'account', userId: READER_ID })).not.toBe(
+      panelKey({ view: 'shared', userId: OWNER_ID, expiresAt: IN_AN_HOUR }),
+    )
+  })
+
+  it('separates two shared views held by the same reader', () => {
+    expect(panelKey({ view: 'shared', userId: OWNER_ID, expiresAt: IN_AN_HOUR })).not.toBe(
+      panelKey({ view: 'shared', userId: READER_ID, expiresAt: IN_AN_HOUR }),
+    )
+  })
+
+  // Sharing with yourself is allowed, and the two views show different things: a share carries the
+  // nights without the profile behind them. Same account id, so only the view tells them apart.
+  it('separates a share pointing at the reader own account from that account', () => {
+    expect(panelKey({ view: 'account', userId: OWNER_ID })).not.toBe(
+      panelKey({ view: 'shared', userId: OWNER_ID, expiresAt: IN_AN_HOUR }),
+    )
+  })
+
+  it('separates the example patient from the account underneath it', () => {
+    expect(panelKey({ view: 'demo', userId: READER_ID })).not.toBe(panelKey({ view: 'account', userId: READER_ID }))
+  })
+
+  it('gives one context the same key every time, so an unrelated re-render keeps the loaded nights', () => {
+    expect(panelKey({ view: 'account', userId: READER_ID })).toBe(panelKey({ view: 'account', userId: READER_ID }))
   })
 })

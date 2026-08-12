@@ -162,11 +162,14 @@ function statCells(stat: StatSummary | undefined, decimals: number): ExportCell[
 export function nightsTable(days: ExportedDay[]): ExportTable {
   const rows = days.map((day): ExportCell[] => {
     const { summary, settings } = day
+    // With no session to measure from, a night is anchored to the noon its therapy day starts at.
+    // That is where the day sits, not when anyone put a mask on, and these two columns say mask.
+    const measured = day.sessionCount > 0
 
     return [
       day.date,
-      deviceClock(day.startMs),
-      deviceClock(day.endMs),
+      measured ? deviceClock(day.startMs) : null,
+      measured ? deviceClock(day.endMs) : null,
       day.sessionCount,
       round(day.usageMinutes, MINUTE_DECIMALS),
       round(day.ahi, INDEX_DECIMALS),

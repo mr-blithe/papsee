@@ -145,7 +145,7 @@ export async function countDays(userId: string): Promise<number> {
   const [row] = await db
     .select({ days: sql<number>`count(*)::int` })
     .from(papDay)
-    .where(eq(papDay.userId, userId))
+    .where(and(eq(papDay.userId, userId), isNotNull(papDay.filledAt)))
 
   return row?.days ?? 0
 }
@@ -253,7 +253,11 @@ export interface ExportedDay extends DayIndexEntry {
 }
 
 export async function listDaysForExport(userId: string): Promise<ExportedDay[]> {
-  const days = await db.select().from(papDay).where(eq(papDay.userId, userId)).orderBy(asc(papDay.date))
+  const days = await db
+    .select()
+    .from(papDay)
+    .where(and(eq(papDay.userId, userId), isNotNull(papDay.filledAt)))
+    .orderBy(asc(papDay.date))
 
   if (days.length === 0) return []
 

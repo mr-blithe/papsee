@@ -61,6 +61,29 @@ describe('redactCapturedUrls', () => {
     })
   })
 
+  // The page a reader came from is a panel URL too, and PostHog reads it from `document.referrer`
+  // with the query intact. Opening any link from a night in a new tab carries that date across.
+  it('redacts the referrer, which carries the previous page whole', () => {
+    const result = redactCapturedUrls(
+      captured({
+        $referrer: 'https://papsee.example/panel/therapy?date=2026-08-09',
+        $session_entry_referrer: 'https://papsee.example/tr/panel/therapy?date=2026-07-14',
+      }),
+    )
+
+    expect(result?.properties).toMatchObject({
+      $referrer: 'https://papsee.example/panel/therapy',
+      $session_entry_referrer: 'https://papsee.example/tr/panel/therapy',
+    })
+  })
+
+  it('leaves the marker PostHog uses when there was no referrer', () => {
+    const result = redactCapturedUrls(captured({ $referrer: '$direct', $session_entry_referrer: '$direct' }))
+
+    expect(result?.properties.$referrer).toBe('$direct')
+    expect(result?.properties.$session_entry_referrer).toBe('$direct')
+  })
+
   it('redacts the person property bags, which outlive the event they arrived on', () => {
     const result = redactCapturedUrls({
       event: '$pageview',

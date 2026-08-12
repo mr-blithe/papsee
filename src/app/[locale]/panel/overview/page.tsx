@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { OverviewScreen } from '@/components/panel/overview-screen'
 import type { Locale } from '@/i18n/routing'
-import type { PanelContext } from '@/lib/panel-context'
+import { panelKey, type PanelContext } from '@/lib/panel-context'
 import { DEMO_PROFILE } from '@/lib/therapy/demo'
 import { requireStoredDays } from '@/lib/therapy/panel-access'
 import { getProfile, type PatientProfile } from '@/lib/therapy/repository'
@@ -35,7 +35,7 @@ export default async function OverviewPage({ params }: PageProps<'/[locale]/pane
   return (
     <div className="flex-1 space-y-3 p-4 md:p-5">
       <div className="space-y-1">
-        <OverviewScreen profile={profile} />
+        <OverviewScreen key={panelKey(context)} profile={profile} />
       </div>
     </div>
   )

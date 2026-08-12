@@ -9,11 +9,19 @@ export function analyticsEnabled(flag: string | undefined, nodeEnv: string | und
   return flag === ANALYTICS_ON && nodeEnv === 'production'
 }
 
-const URL_PROPERTIES = ['$current_url', '$initial_current_url', '$session_entry_url'] as const
+const URL_PROPERTIES = [
+  '$current_url',
+  '$initial_current_url',
+  '$session_entry_url',
+  '$referrer',
+  '$session_entry_referrer',
+] as const
 
 // A panel URL carries the night being read, as in /panel/therapy?date=2026-08-09, and that a person
 // used a PAP device on a given date is the therapy data itself. $initial_current_url is also set
 // once on the person profile, so it outlives the event it arrived on and has to be redacted here too.
+// The referrer pair is the same URL one page later: PostHog reads it from document.referrer, which
+// keeps the query, so opening any link from a night in a new tab would carry that date across.
 const withoutQueryOrFragment = (value: unknown): unknown => {
   if (typeof value !== 'string') return value
 

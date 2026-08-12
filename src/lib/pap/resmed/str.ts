@@ -3,7 +3,7 @@ import { papDayKey } from '../device-time'
 import { parseEdf, signalIndex, type EdfFile } from '../edf/header'
 import { readSignal } from '../edf/signals'
 import type { CardDaySummary, DaySettings, DaySummary, StatSummary } from '../types'
-import { enumDecoder } from './enums'
+import { enumDecoder, type EnumDecoder } from './enums'
 
 const LEAK_TO_LITRES_PER_MINUTE = 60
 const LITRES_TO_MILLILITRES = 1000
@@ -42,6 +42,10 @@ const MAX_PRESSURE = [
   '最大压力',
 ]
 const EPR_LEVEL = ['S.EPR.Level', 'EPR Level', 'EPR-Stufe', 'EPR-niveau', 'Niveau EPR', 'EPR-nivå', 'EPR Düzeyi']
+const EPR_MODE = ['EPR']
+const EPR_TYPE = ['S.EPR.EPRType']
+const EPR_ENABLE = ['S.EPR.EPREnable']
+const EPR_CLINICAL_ENABLE = ['S.EPR.ClinEnable']
 const MASK_ON = ['MaskOn', 'Mask On']
 const MASK_OFF = ['MaskOff', 'Mask Off']
 
@@ -133,15 +137,43 @@ function stat(reader: StrReader, record: number, labels: ReturnType<typeof statL
   return { median: scaled(labels.median), percentile95: scaled(labels.percentile95), max: scaled(labels.max) }
 }
 
+type EprSettings = Pick<DaySettings, 'eprEnabled' | 'eprType' | 'eprLevel'>
+
+/**
+ * The two generations spell exhale pressure relief differently and encode it differently. An
+ * AirSense writes dotted signals: a type offset by one, plus a device enable and a clinician enable
+ * that both have to be on. An S9 writes a bare `EPR` carrying the relief mode itself. Applying the
+ * dotted gate to a card that has no dotted signals is what reported an S9 running relief as Off, so
+ * the gate is read only when those signals are actually there.
+ */
+function readEpr(reader: StrReader, record: number, decode: EnumDecoder): EprSettings {
+  const type = reader.at(EPR_TYPE, record)
+  const enable = reader.at(EPR_ENABLE, record)
+  const clinicalEnable = reader.at(EPR_CLINICAL_ENABLE, record)
+  const level = reader.at(EPR_LEVEL, record)
+
+  if (type !== null || enable !== null || clinicalEnable !== null) {
+    const eprEnabled = decode.onOff(enable)
+    const active = eprEnabled === 'On' && decode.onOff(clinicalEnable) === 'On'
+
+    return { eprEnabled, eprType: active ? decode.eprType(type) : 'Off', eprLevel: active ? level : null }
+  }
+
+  const mode = reader.at(EPR_MODE, record)
+  if (mode === null) return { eprEnabled: decode.onOff(null), eprType: decode.eprMode(null), eprLevel: null }
+
+  const eprType = decode.eprMode(mode)
+  const off = eprType === 'Off'
+
+  return { eprEnabled: off ? 'Off' : 'On', eprType, eprLevel: off ? null : level }
+}
+
 function readSettings(reader: StrReader, record: number, modelNumber: number | null): DaySettings {
   const decode = enumDecoder(modelNumber)
   const rawMode = reader.at(MODE, record)
   const mode = rawMode === null ? null : decode.mode(rawMode)
   const pressures = mode === null ? null : (PRESSURE_BY_MODE[mode] ?? null)
 
-  const eprEnabled = decode.onOff(reader.at(['S.EPR.EPREnable'], record))
-  const clinicalEpr = decode.onOff(reader.at(['S.EPR.ClinEnable'], record))
-  const eprActive = eprEnabled === 'On' && clinicalEpr === 'On'
   const rampMode = decode.rampMode(reader.at(['S.RampEnable'], record))
 
   return {
@@ -150,9 +182,7 @@ function readSettings(reader: StrReader, record: number, modelNumber: number | n
     minPressure: pressures?.min ? reader.at(pressures.min, record) : null,
     maxPressure: pressures?.max ? reader.at(pressures.max, record) : null,
     startPressure: pressures ? reader.at(pressures.start, record) : null,
-    eprEnabled,
-    eprType: eprActive ? decode.eprType(reader.at(['S.EPR.EPRType'], record)) : 'Off',
-    eprLevel: eprActive ? reader.at(EPR_LEVEL, record) : null,
+    ...readEpr(reader, record, decode),
     rampMode,
     rampMinutes: rampMode === 'Auto' ? null : reader.at(['S.RampTime'], record),
     smartStart: decode.onOff(reader.at(['S.SmartStart'], record)),
