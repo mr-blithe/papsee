@@ -177,9 +177,11 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
     const orphaned = [...assignment.entries()]
       .filter(([, date]) => date !== null && !dates.includes(date))
       .map(([path]) => path)
-    if (orphaned.length > 0) {
-      await tx.delete(papFile).where(and(eq(papFile.importId, importId), inArray(papFile.path, orphaned)))
-    }
+
+    // A file that did not get a day belongs to no night this card kept: the card level ones, parsed
+    // into the import above and never read again, the ones whose night was replaced, and the ones no
+    // date could be read from. `fileCount` already records what the card held, so the bytes can go.
+    await tx.delete(papFile).where(and(eq(papFile.importId, importId), isNull(papFile.dayId)))
 
     await tx
       .update(papImport)
@@ -253,8 +255,12 @@ async function fillDay(
     const dropped = summary ? 0 : stored.length
 
     await db.transaction(async (tx) => {
-      if (summary) await tx.update(papDay).set({ filledAt: new Date() }).where(eq(papDay.id, day.id))
-      else await tx.delete(papDay).where(eq(papDay.id, day.id))
+      if (summary) {
+        await tx.update(papDay).set({ filledAt: new Date() }).where(eq(papDay.id, day.id))
+        await tx.delete(papFile).where(eq(papFile.dayId, day.id))
+      } else {
+        await tx.delete(papDay).where(eq(papDay.id, day.id))
+      }
 
       await tx
         .update(papImport)
@@ -297,6 +303,11 @@ async function fillDay(
 
     await tx.delete(papEvent).where(eq(papEvent.dayId, day.id))
     await tx.delete(papChannel).where(eq(papChannel.dayId, day.id))
+
+    // The night is stored in the three tables every screen reads, so the files it was parsed from are
+    // dropped in the same transaction: a slice that rolls back keeps them, and a night is never left
+    // filled with the bytes behind it already gone.
+    await tx.delete(papFile).where(eq(papFile.dayId, day.id))
 
     const events = built.day.sessions.flatMap((session, sessionIndex) =>
       session.events.map((event) => ({
