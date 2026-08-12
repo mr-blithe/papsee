@@ -28,10 +28,10 @@ GET    /share/[token]            redeem a link: a route handler under [locale], 
 
 ## The storage model
 
-- **Nothing reads a night by parsing bytes.** The import files stay in `pap_file` as the record of what the device
-  wrote, but every screen reads the parsed form: `pap_day` for the summary, `pap_event` for the scored events and
-  `pap_channel` for the waveforms. Re-parsing EDF on every day open is what made the panel slow, and it also meant
-  opening one night re-derived the whole card's `STR.edf`.
+- **Nothing reads a night by parsing bytes.** `pap_file` is where an upload lands and the only thing that reads it
+  is the commit; every screen reads the parsed form instead: `pap_day` for the summary, `pap_event` for the scored
+  events and `pap_channel` for the waveforms. Re-parsing EDF on every day open is what made the panel slow, and it
+  also meant opening one night re-derived the whole card's `STR.edf`.
 - **A channel is stored the way the device wrote it.** `pap_channel.samples` holds little endian Int16 samples
   with the one linear mapping (`scale`, `offset`) that turns them into physical units, so what is written and what
   is read back are identical by construction rather than by two formulas agreeing. `scale` and `offset` are
@@ -54,8 +54,15 @@ GET    /share/[token]            redeem a link: a route handler under [locale], 
   A year of nights therefore never needs a single request large enough to parse all of it, and the client's own
   parse is never what gets stored, or a crafted request could write any number it liked into a reader's history.
   Every slice is idempotent, so the client retries rather than throwing away a long upload.
-- **A day is replayed from the import that owns it.** `pap_file.dayId` is set at commit from the filename
-  timestamp, because `DATALOG/20260809/` holds the sessions of the night that _started_ on the 8th.
+- **A night's files are found through the day they were written for.** `pap_file.dayId` is set in the opening
+  slice from the filename timestamp, because `DATALOG/20260809/` holds the sessions of the night that _started_ on
+  the 8th.
+- **The commit consumes the bytes it parses.** A card is uploaded to be read once, so nothing keeps it afterwards:
+  the opening slice deletes every file that got no day, which is the card level ones it just parsed into the
+  import along with the undated and the replaced, and `fillDay` deletes a night's files in the same transaction
+  that writes the night. Transactional because a slice that rolls back has to keep them, or the retry the client
+  makes would find a night it can no longer parse. A committed import therefore holds no bytes at all, and the
+  cost of that is real: a parser fix cannot be replayed over a night already stored, only over one uploaded again.
 - **A night that would not parse is never written as an empty one.** `buildDigitalDay` answers a throwing loader
   with no sessions, and storing that would report a night somebody slept through as no usage and no AHI. So
   `fillDay` keeps whatever the card itself already said about that night and drops the row when the card said
