@@ -10,6 +10,7 @@ import {
   type CardBrand,
   type CardDaySummary,
   type CardFileHead,
+  type DigitalDayResult,
   type PapFile,
 } from '@/lib/pap'
 import { toDayIndexRow } from './day-index'
@@ -223,7 +224,17 @@ async function beginCommit(userId: string, importId: string): Promise<CommitProg
   }
 }
 
-/** One night, parsed from the files stored for it. Returns the dates it could not read, if any. */
+/**
+ * A night the commit has no session to store. Bytes that would not parse are one way there, and the
+ * other is a night whose files all turned out to belong to a different one: `beginCommit` seeds a day
+ * from the date `assignDays` reads off a file head, while `buildDigitalDay` keeps only the sessions
+ * whose `papDayKey` lands on that day, and the two can disagree.
+ */
+export function parsedNothing(built: DigitalDayResult): boolean {
+  return built.unreadable.length > 0 || built.day.sessions.length === 0
+}
+
+/** One night, parsed from the files stored for it. Returns the dates it stored no night for, if any. */
 async function fillDay(
   userId: string,
   importId: string,
@@ -247,12 +258,12 @@ async function fillDay(
 
   const built = buildDigitalDay(brand, day.date, stored.map(toPapFile), summary)
 
-  // Files that would not parse leave an empty night behind, and writing that over the row would
-  // report a night somebody slept through as no usage and no AHI. What the card already said about
-  // it is kept instead, and a night the card said nothing about is dropped rather than shown empty.
-  if (built.unreadable.length > 0) {
+  // What the card already said about the night is kept instead, and a night the card said nothing
+  // about is dropped rather than left showing no usage and AHI 0.
+  if (parsedNothing(built)) {
     // A dropped day takes its files with it, so what the import says it holds has to follow them out.
     const dropped = summary ? 0 : stored.length
+    const failed = built.unreadable.length > 0 ? built.unreadable : [day.date]
 
     await db.transaction(async (tx) => {
       if (summary) {
@@ -265,13 +276,13 @@ async function fillDay(
       await tx
         .update(papImport)
         .set({
-          unreadable: sql`array_cat(${papImport.unreadable}, ${built.unreadable})`,
+          unreadable: sql`array_cat(${papImport.unreadable}, ${failed})`,
           fileCount: sql`greatest(${papImport.fileCount} - ${dropped}, 0)`,
         })
         .where(eq(papImport.id, importId))
     })
 
-    return built.unreadable
+    return failed
   }
 
   const parsed = toPapDay(built.day)

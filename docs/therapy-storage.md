@@ -63,11 +63,16 @@ GET    /share/[token]            redeem a link: a route handler under [locale], 
   that writes the night. Transactional because a slice that rolls back has to keep them, or the retry the client
   makes would find a night it can no longer parse. A committed import therefore holds no bytes at all, and the
   cost of that is real: a parser fix cannot be replayed over a night already stored, only over one uploaded again.
-- **A night that would not parse is never written as an empty one.** `buildDigitalDay` answers a throwing loader
-  with no sessions, and storing that would report a night somebody slept through as no usage and no AHI. So
-  `fillDay` keeps whatever the card itself already said about that night and drops the row when the card said
-  nothing, `advanceCommit` answers `unreadableCard` when a card loses every night that way, and the dates travel
-  back to the import screen rather than ending at a success message.
+- **A night the commit built no session for is never written as an empty one.** `parsedNothing` decides that, and
+  there are two ways to get there: bytes that would not parse, which `buildDigitalDay` answers with no sessions,
+  and a night whose files all turned out to belong to a different one, because `beginCommit` seeds a day from the
+  date `assignDays` read off a file head while `buildDigitalDay` keeps only the sessions whose `papDayKey` lands
+  on that day, and those two can disagree. Storing either would report a night somebody slept through as no usage
+  and no AHI. So `fillDay` keeps whatever the card itself already said about that night and drops the row when
+  the card said nothing, `advanceCommit` answers `unreadableCard` when a card loses every night that way, and the
+  dates travel back to the import screen rather than ending at a success message. **Only the throwing case names
+  the date in `unreadable`**, so `fillDay` reports the day's own date when nothing was stored and the parse never
+  threw, or a night that silently vanished would come back to the import screen as a success.
 - **Re-importing a night replaces it.** `pap_day` is unique on `(userId, date)`; every date the new card covers is
   deleted once, up front, in the opening slice, and the old day's events, channels and bytes go with it. An import
   left with no days is deleted there too rather than kept as orphaned bytes, so an abandoned commit cannot strand
